@@ -163,6 +163,8 @@
     opacity: .75; transition: opacity .2s, color .2s;
   }
   .aa:hover, .aa.on { opacity: 1; color: var(--ink); }
+  .aa.undo { right: 60px; }
+  .aa:disabled { opacity: .3; color: var(--muted); cursor: default; }
 
   /* Inline input */
   .inputwrap { position: absolute; transform: translate(-50%, -50%); pointer-events: auto; z-index: 20; }
@@ -310,6 +312,7 @@
   <button id="hint" class="hint" aria-label="Add a thought here"></button>
   <button id="addCircle" class="addc" title="Add a circle" aria-label="Add a circle"></button>
   <button id="fontBtn" class="aa" title="Colors and text" aria-label="Colors and text"></button>
+  <button id="undoBtn" class="aa undo" title="Undo" aria-label="Undo" disabled></button>
   <div id="selBar" class="selbar" role="toolbar" aria-label="Selected thoughts"></div>
   <div id="floating" class="layer"></div>
   <div id="marquee" class="marquee"></div>
@@ -364,12 +367,15 @@ const UNIT = {
 const ICON_PLUS = '<svg width="14" height="14" viewBox="0 0 16 16"><path d="M8 3v10M3 8h10" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" fill="none"/></svg>';
 const ICON_X = '<svg width="9" height="9" viewBox="0 0 10 10"><path d="M2 2l6 6M8 2l-6 6" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" fill="none"/></svg>';
 
+const ICON_UNDO = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M9 14L4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H11"/></svg>';
 const ICON_TRASH = '<svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M2.5 4.5h11M6.5 4.5V3h3v1.5M4 4.5l.7 8.5h6.6l.7-8.5M6.8 7v3.8M9.2 7v3.8"/></svg>';
 const ICON_PALETTE = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"><path d="M12 3.2c-5 0-9 3.8-9 8.6 0 4.9 4 8.9 8.9 8.9 1.1 0 1.8-.7 1.8-1.6 0-.5-.2-.8-.5-1.2-.3-.3-.5-.7-.5-1.2 0-.9.8-1.6 1.7-1.6h2.1c2.9 0 5.3-2.3 5.3-5.2 0-4.2-4.3-6.7-9.8-6.7z"/><circle cx="7.6" cy="11.6" r="1.1" fill="currentColor" stroke="none"/><circle cx="10.2" cy="7.6" r="1.1" fill="currentColor" stroke="none"/><circle cx="14.8" cy="7.6" r="1.1" fill="currentColor" stroke="none"/><circle cx="17.4" cy="11.4" r="1.1" fill="currentColor" stroke="none"/></svg>';
 const $ = s => document.querySelector(s);
 const stage = $('#stage'), defs = $('#defs'), circlesG = $('#circles'), tint = $('#tint'), dim = $('#dim');
 const labelsL = $('#labels'), chipsL = $('#chips'), hintEl = $('#hint'), addBtn = $('#addCircle');
 const floatL = $('#floating'), emptyHint = $('#emptyHint'), fontBtn = $('#fontBtn');
+const undoBtn = $('#undoBtn');
+undoBtn.innerHTML = ICON_UNDO;
 const selBar = $('#selBar'), marqEl = $('#marquee');
 hintEl.innerHTML = ICON_PLUS;
 fontBtn.innerHTML = ICON_PALETTE;
@@ -429,6 +435,35 @@ let saveT;
 function save() {
   clearTimeout(saveT);
   saveT = setTimeout(() => { try { localStorage.setItem(STORE, JSON.stringify(state)); } catch {} }, 150);
+  clearTimeout(histT);
+  histT = setTimeout(checkpoint, 500);
+}
+
+/* ---------- undo ---------- */
+// Snapshots of the whole state; changes within half a second (e.g. typing) count as one step.
+const undoStack = [];
+let lastSnap = JSON.stringify(state), histT;
+function checkpoint() {
+  clearTimeout(histT);
+  const s = JSON.stringify(state);
+  if (s !== lastSnap) {
+    undoStack.push(lastSnap);
+    if (undoStack.length > 100) undoStack.shift();
+    lastSnap = s;
+  }
+  undoBtn.disabled = !undoStack.length;
+}
+function undo() {
+  if (ui.input) cancelInput();
+  if (ui.pop) closePop();
+  checkpoint();
+  if (!undoStack.length) return;
+  lastSnap = undoStack.pop();
+  state = JSON.parse(lastSnap);
+  clearSel();
+  applyFont(); applySize(); applyColors();
+  wcache = new Map();
+  relayout(); save();
 }
 const item = id => state.items.find(i => i.id === id);
 const setById = id => state.sets.find(s => s.id === id);
@@ -724,6 +759,7 @@ function setTargets(instant, initial) {
     live.add(s.id);
     const g = geo[s.id], to = { x: g.x, y: g.y, r: g.r, o: 1 };
     let a = anim.get(s.id);
+    if (a) { a.color = s.color; a.leaving = false; }
     if (!a) {
       const from = initial ? { ...to, r: g.r * .86, o: 0 } : { ...to, r: 0, o: 0 };
       anim.set(s.id, { from, to, t0: now, color: s.color });
@@ -795,6 +831,7 @@ function renderLabels() {
       labelsL.appendChild(el);
       labelEls.set(s.id, el);
     }
+    el.classList.remove('leaving');
     const inner = el.firstChild, nameEl = inner.querySelector('.name');
     inner.style.color = tone(s.color).ink;
     let inp = inner.querySelector('input');
@@ -1479,6 +1516,7 @@ hintEl.addEventListener('click', () => {
   if (ph) openInput(k, ph.x, ph.y);
 });
 addBtn.addEventListener('click', addSet);
+undoBtn.addEventListener('click', undo);
 fontBtn.addEventListener('click', () => { if (ui.pop && ui.pop.kind === 'font') closePop(); else openStylePop(); });
 
 let lastTarget = null, mouse = { x: -1e4, y: -1e4 }, hoverRaf = 0;
