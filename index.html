@@ -163,7 +163,8 @@
     opacity: .75; transition: opacity .2s, color .2s;
   }
   .aa:hover, .aa.on { opacity: 1; color: var(--ink); }
-  .aa.undo { right: 60px; }
+  .aa.undo { right: 104px; }
+  .aa.redo { right: 60px; }
   .aa:disabled { opacity: .3; color: var(--muted); cursor: default; }
 
   /* Inline input */
@@ -313,6 +314,7 @@
   <button id="addCircle" class="addc" title="Add a circle" aria-label="Add a circle"></button>
   <button id="fontBtn" class="aa" title="Colors and text" aria-label="Colors and text"></button>
   <button id="undoBtn" class="aa undo" title="Undo" aria-label="Undo" disabled></button>
+  <button id="redoBtn" class="aa redo" title="Redo" aria-label="Redo" disabled></button>
   <div id="selBar" class="selbar" role="toolbar" aria-label="Selected thoughts"></div>
   <div id="floating" class="layer"></div>
   <div id="marquee" class="marquee"></div>
@@ -374,8 +376,9 @@ const $ = s => document.querySelector(s);
 const stage = $('#stage'), defs = $('#defs'), circlesG = $('#circles'), tint = $('#tint'), dim = $('#dim');
 const labelsL = $('#labels'), chipsL = $('#chips'), hintEl = $('#hint'), addBtn = $('#addCircle');
 const floatL = $('#floating'), emptyHint = $('#emptyHint'), fontBtn = $('#fontBtn');
-const undoBtn = $('#undoBtn');
+const undoBtn = $('#undoBtn'), redoBtn = $('#redoBtn');
 undoBtn.innerHTML = ICON_UNDO;
+redoBtn.innerHTML = ICON_UNDO.replace('<svg ', '<svg style="transform:scaleX(-1)" ');
 const selBar = $('#selBar'), marqEl = $('#marquee');
 hintEl.innerHTML = ICON_PLUS;
 fontBtn.innerHTML = ICON_PALETTE;
@@ -439,9 +442,9 @@ function save() {
   histT = setTimeout(checkpoint, 500);
 }
 
-/* ---------- undo ---------- */
+/* ---------- undo / redo ---------- */
 // Snapshots of the whole state; changes within half a second (e.g. typing) count as one step.
-const undoStack = [];
+const undoStack = [], redoStack = [];
 let lastSnap = JSON.stringify(state), histT;
 function checkpoint() {
   clearTimeout(histT);
@@ -449,16 +452,23 @@ function checkpoint() {
   if (s !== lastSnap) {
     undoStack.push(lastSnap);
     if (undoStack.length > 100) undoStack.shift();
+    redoStack.length = 0;
     lastSnap = s;
   }
   undoBtn.disabled = !undoStack.length;
+  redoBtn.disabled = !redoStack.length;
 }
-function undo() {
+const undo = () => step(undoStack, redoStack);
+const redo = () => step(redoStack, undoStack);
+function step(from, to) {
   if (ui.input) cancelInput();
   if (ui.pop) closePop();
   checkpoint();
-  if (!undoStack.length) return;
-  lastSnap = undoStack.pop();
+  if (!from.length) return;
+  to.push(lastSnap);
+  lastSnap = from.pop();
+  undoBtn.disabled = !undoStack.length;
+  redoBtn.disabled = !redoStack.length;
   state = JSON.parse(lastSnap);
   clearSel();
   applyFont(); applySize(); applyColors();
@@ -1517,6 +1527,7 @@ hintEl.addEventListener('click', () => {
 });
 addBtn.addEventListener('click', addSet);
 undoBtn.addEventListener('click', undo);
+redoBtn.addEventListener('click', redo);
 fontBtn.addEventListener('click', () => { if (ui.pop && ui.pop.kind === 'font') closePop(); else openStylePop(); });
 
 let lastTarget = null, mouse = { x: -1e4, y: -1e4 }, hoverRaf = 0;
