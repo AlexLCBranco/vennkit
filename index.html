@@ -11,14 +11,17 @@
 <style>
   :root {
     color-scheme: dark;
+    /* Everything below derives from --bg and --ink, which the Style panel can change. */
     --bg: #15161b;
-    --bg-hi: #1d1f26;
     --ink: #e8e9ee;
-    --ink-2: #c3c5cd;
-    --muted: #80838e;
-    --faint: #5d606b;
-    --surface: #262830;
-    --surface-hi: #2f323b;
+    --k: 1;
+    --chip-h: 28px;
+    --bg-hi: color-mix(in srgb, var(--bg), #fff 4%);
+    --ink-2: color-mix(in srgb, var(--ink) 82%, var(--bg));
+    --muted: color-mix(in srgb, var(--ink) 50%, var(--bg));
+    --faint: color-mix(in srgb, var(--ink) 34%, var(--bg));
+    --surface: color-mix(in srgb, var(--bg), #fff 8%);
+    --surface-hi: color-mix(in srgb, var(--bg), #fff 12%);
     --line: rgba(255, 255, 255, .08);
     --line-2: rgba(255, 255, 255, .16);
     --shadow: rgba(0, 0, 0, .45);
@@ -53,7 +56,7 @@
   .label.leaving { pointer-events: none; }
   .lab-in {
     position: relative; display: flex; align-items: center;
-    font-size: 15px; font-weight: 600; letter-spacing: -.01em; white-space: nowrap;
+    font-size: calc(15px * var(--k)); font-weight: 600; letter-spacing: -.01em; white-space: nowrap;
     transition: opacity .3s ease;
   }
   .lab-in.dim { opacity: .3; }
@@ -94,12 +97,12 @@
   .chip-pos.dragging { transition: none; z-index: 10; }
   .chip-pos.focus { z-index: 5; }
   .chip, .pchip {
-    height: 28px; padding: 0 12px; border-radius: 999px;
+    height: var(--chip-h); padding: 0 calc(12px * var(--k)); border-radius: 999px;
     display: flex; align-items: center; justify-content: center;
     background: var(--surface);
     border: 1px solid var(--line);
     box-shadow: 0 1px 2px var(--shadow), 0 3px 10px rgba(0, 0, 0, .25);
-    font: 500 13px/1 var(--font); color: var(--ink);
+    font: 500 calc(13px * var(--k))/1 var(--font); color: var(--ink);
     cursor: pointer; white-space: nowrap;
     transition: transform .25s var(--ease), box-shadow .25s ease, background .2s, color .2s, opacity .25s, border-color .2s;
   }
@@ -151,7 +154,7 @@
   .aa {
     position: absolute; top: 16px; right: 16px; width: 36px; height: 36px; padding: 0;
     border-radius: 50%; border: none; cursor: pointer;
-    background: var(--surface); color: var(--muted); font: 600 13px var(--font);
+    background: var(--surface); color: var(--muted); display: grid; place-items: center;
     box-shadow: 0 0 0 1px var(--line), 0 2px 6px var(--shadow);
     opacity: .75; transition: opacity .2s, color .2s;
   }
@@ -160,9 +163,9 @@
   /* Inline input */
   .inputwrap { position: absolute; transform: translate(-50%, -50%); pointer-events: auto; z-index: 20; }
   .inputwrap input {
-    height: 32px; padding: 0 14px; border-radius: 999px;
+    height: calc(32px * var(--k)); padding: 0 14px; border-radius: 999px;
     border: 1px solid var(--line-2); outline: none; background: var(--surface);
-    font: 500 13px var(--font); color: var(--ink);
+    font: 500 calc(13px * var(--k)) var(--font); color: var(--ink);
     box-shadow: 0 0 0 4px rgba(150, 165, 230, .16), 0 10px 26px var(--shadow);
     animation: popIn .28s var(--ease) both;
     transition: width .15s ease;
@@ -204,7 +207,18 @@
   .pop .list { display: flex; flex-wrap: wrap; gap: 6px; max-height: 260px; overflow: auto; padding: 2px; }
   .pop .pchip { max-width: 100%; }
   .pop .pchip:hover { transform: translateY(-1px); }
-  .pop.narrow { width: 232px; }
+  .pop.wide { width: 300px; }
+  .sec + .sec { margin-top: 14px; }
+  .sec-t { font-size: 11px; font-weight: 600; letter-spacing: .05em; text-transform: uppercase; color: var(--muted); margin-bottom: 7px; }
+  .sec .styl { margin: 0; padding: 0; border: none; }
+  .seg { display: flex; gap: 2px; padding: 3px; border-radius: 10px; background: rgba(255, 255, 255, .04); border: 1px solid var(--line); }
+  .seg button {
+    flex: 1; height: 30px; border: none; border-radius: 7px; cursor: pointer;
+    background: transparent; color: var(--muted); font-family: var(--font); font-weight: 500;
+    transition: background .15s, color .15s;
+  }
+  .seg button:hover { color: var(--ink-2); }
+  .seg button.on { background: var(--surface-hi); color: var(--ink); box-shadow: inset 0 0 0 1px var(--line-2); }
 
   /* Style controls */
   .pop .fmt { display: flex; gap: 2px; margin-left: auto; flex: none; text-transform: none; letter-spacing: 0; }
@@ -221,10 +235,11 @@
   .sw {
     position: relative; width: 18px; height: 18px; padding: 0; flex: none;
     border: none; border-radius: 50%; cursor: pointer;
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .14);
     transition: transform .2s var(--ease), box-shadow .2s;
   }
   .sw:hover { transform: scale(1.15); }
-  .sw.on { box-shadow: 0 0 0 2px var(--surface), 0 0 0 3.5px var(--ink-2); }
+  .sw.on { box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .14), 0 0 0 2px var(--surface), 0 0 0 3.5px var(--ink-2); }
   .sw.none { background: transparent; box-shadow: inset 0 0 0 1.5px var(--line-2); overflow: hidden; }
   .sw.none::after { content: ""; position: absolute; left: 50%; top: 2px; bottom: 2px; width: 1.5px; margin-left: -.75px; background: var(--muted); transform: rotate(45deg); }
   .sw.none.on { box-shadow: inset 0 0 0 1.5px var(--line-2), 0 0 0 2px var(--surface), 0 0 0 3.5px var(--ink-2); }
@@ -232,7 +247,7 @@
   .sw.custom input { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer; border: none; padding: 0; }
   .fonts { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
   .fopt {
-    height: 58px; border-radius: 10px; border: 1px solid var(--line); cursor: pointer;
+    height: 52px; border-radius: 10px; border: 1px solid var(--line); cursor: pointer;
     background: rgba(255, 255, 255, .03); color: var(--ink-2);
     display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px;
     transition: background .15s, border-color .15s, color .15s;
@@ -262,7 +277,7 @@
   <div id="chips" class="layer"></div>
   <button id="hint" class="hint" aria-label="Add a thought here"></button>
   <button id="addCircle" class="addc" title="Add a circle" aria-label="Add a circle"></button>
-  <button id="fontBtn" class="aa" title="Font" aria-label="Choose font">Aa</button>
+  <button id="fontBtn" class="aa" title="Colors and text" aria-label="Colors and text"></button>
   <div id="floating" class="layer"></div>
   <div id="emptyHint" class="empty-hint">Click inside a circle to add a thought</div>
 </div>
@@ -280,7 +295,14 @@ const FONTS = {
   round: { name: 'Rounded', css: 'Nunito, ui-rounded, system-ui, sans-serif' },
 };
 let FONT = FONTS.sans.css;
-const CH = 28, GAP = 6, RGAP = 7, PH = 28, EDGE = 10, MAXTXT = 150, PADX = 12;
+const GAP = 6, RGAP = 7, PH = 28, EDGE = 10;
+// Chip metrics scale with the text size setting (see applySize).
+let CH = 28, MAXTXT = 150, PADX = 12, FS = 13, LFS = 15;
+const SIZES = { sm: { name: 'Small', k: .88 }, md: { name: 'Medium', k: 1 }, lg: { name: 'Large', k: 1.2 } };
+const BGS = ['#15161b', '#0b0b0d', '#121a2a', '#13201b', '#21151f', '#231c16', '#1d2026'];
+const BG_NAMES = ['Graphite', 'Black', 'Navy', 'Forest', 'Plum', 'Cocoa', 'Slate'];
+const INKS = ['#e8e9ee', '#ffffff', '#f4ead8', '#dbeee4', '#dde5fb', '#f6dcdf'];
+const INK_NAMES = ['Default', 'White', 'Cream', 'Mint', 'Ice', 'Blush'];
 const SCALES = [1, .88, .76];
 const OFFS = [0, -.5, .5, -1, 1, -1.5, 1.5];
 const DUR = 650;
@@ -308,11 +330,13 @@ const UNIT = {
 const ICON_PLUS = '<svg width="14" height="14" viewBox="0 0 16 16"><path d="M8 3v10M3 8h10" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" fill="none"/></svg>';
 const ICON_X = '<svg width="9" height="9" viewBox="0 0 10 10"><path d="M2 2l6 6M8 2l-6 6" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" fill="none"/></svg>';
 
+const ICON_PALETTE = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"><path d="M12 3.2c-5 0-9 3.8-9 8.6 0 4.9 4 8.9 8.9 8.9 1.1 0 1.8-.7 1.8-1.6 0-.5-.2-.8-.5-1.2-.3-.3-.5-.7-.5-1.2 0-.9.8-1.6 1.7-1.6h2.1c2.9 0 5.3-2.3 5.3-5.2 0-4.2-4.3-6.7-9.8-6.7z"/><circle cx="7.6" cy="11.6" r="1.1" fill="currentColor" stroke="none"/><circle cx="10.2" cy="7.6" r="1.1" fill="currentColor" stroke="none"/><circle cx="14.8" cy="7.6" r="1.1" fill="currentColor" stroke="none"/><circle cx="17.4" cy="11.4" r="1.1" fill="currentColor" stroke="none"/></svg>';
 const $ = s => document.querySelector(s);
 const stage = $('#stage'), defs = $('#defs'), circlesG = $('#circles'), tint = $('#tint'), dim = $('#dim');
 const labelsL = $('#labels'), chipsL = $('#chips'), hintEl = $('#hint'), addBtn = $('#addCircle');
 const floatL = $('#floating'), emptyHint = $('#emptyHint'), fontBtn = $('#fontBtn');
 hintEl.innerHTML = ICON_PLUS;
+fontBtn.innerHTML = ICON_PALETTE;
 addBtn.innerHTML = ICON_PLUS.replace(/14/g, '18');
 
 const uid = () => Math.random().toString(36).slice(2, 10);
@@ -330,7 +354,7 @@ function defaultState() {
     ],
     items: [],
     zones: {},
-    font: 'sans',
+    font: 'sans', size: 'md', bg: BGS[0], ink: INKS[0], chipColor: null,
   };
 }
 function load() {
@@ -356,6 +380,10 @@ function load() {
         : {},
     })).filter(i => i.sets.length);
     s.font = FONTS[s.font] ? s.font : 'sans';
+    s.size = SIZES[s.size] ? s.size : 'md';
+    s.bg = okHex(s.bg) ? s.bg.toLowerCase() : BGS[0];
+    s.ink = okHex(s.ink) ? s.ink.toLowerCase() : INKS[0];
+    s.chipColor = okHex(s.chipColor) ? s.chipColor.toLowerCase() : null;
     s.zones = s.zones && typeof s.zones === 'object' ? s.zones : {};
     return s;
   } catch { return defaultState(); }
@@ -378,7 +406,7 @@ function zoneName(ids) {
 /* ---------- text measuring ---------- */
 const mctx = document.createElement('canvas').getContext('2d');
 let wcache = new Map();
-function textW(t, weight = 500, size = 13, italic = false) {
+function textW(t, weight = 500, size = FS, italic = false) {
   const k = weight + '|' + size + '|' + italic + '|' + t;
   let w = wcache.get(k);
   if (w == null) { mctx.font = `${italic ? 'italic ' : ''}${weight} ${size}px ${FONT}`; w = mctx.measureText(t).width; wcache.set(k, w); }
@@ -386,15 +414,15 @@ function textW(t, weight = 500, size = 13, italic = false) {
 }
 const chipW = it => {
   const st = it.style || {};
-  return Math.ceil(Math.min(textW(it.title, st.b ? 600 : 500, 13, !!st.i), MAXTXT)) + PADX * 2 + 3;
+  return Math.ceil(Math.min(textW(it.title, st.b ? 600 : 500, FS, !!st.i), MAXTXT)) + PADX * 2 + 3;
 };
 function styleChip(c, it) {
-  const st = it.style || {};
+  const st = it.style || {}, color = st.color || state.chipColor;
   c.classList.toggle('b', !!st.b);
   c.classList.toggle('i', !!st.i);
   c.classList.toggle('s', !!st.s);
-  c.classList.toggle('tinted', !!st.color);
-  if (st.color) { c.style.setProperty('--cc', st.color); c.style.setProperty('--cc-ink', tone(st.color).ink); }
+  c.classList.toggle('tinted', !!color);
+  if (color) { c.style.setProperty('--cc', color); c.style.setProperty('--cc-ink', tone(color).ink); }
 }
 const moreW = n => Math.ceil(textW(`+${n} more`)) + PADX * 2 + 3;
 
@@ -759,7 +787,7 @@ function positionLabels(disp) {
     el.style.opacity = f2(d.o);
   }
 }
-function sizeRename(inp) { inp.style.width = clamp(textW(inp.value || ' ', 600, 15) + 22, 60, 280) + 'px'; }
+function sizeRename(inp) { inp.style.width = clamp(textW(inp.value || ' ', 600, LFS) + 22, 60, 320) + 'px'; }
 function hookRename(inp, s) {
   inp.addEventListener('input', () => {
     s.name = inp.value; sizeRename(inp); save();
@@ -959,6 +987,7 @@ function placePop() {
   const p = ui.pop, el = popEl;
   if (!p || !el) return;
   if (p.kind === 'item') { const r = chipRect(p.id); if (r) p.anchor = r; }
+  if (p.kind === 'font') p.anchor = elRect(fontBtn);
   if (p.kind === 'set') { const lab = labelEls.get(p.id); if (lab) { const r = lab.firstChild.getBoundingClientRect(); p.anchor = { x: r.left, y: r.top, w: r.width, h: r.height }; } }
   const a = p.anchor, pw = el.offsetWidth, ph = el.offsetHeight, M = 12, G = 12;
   const order = p.prefer === 'left' ? ['left', 'right', 'below', 'above'] : ['right', 'left', 'below', 'above'];
@@ -982,13 +1011,13 @@ function placePop() {
 const elRect = el => { const r = el.getBoundingClientRect(); return { x: r.left, y: r.top, w: r.width, h: r.height }; };
 
 /* Color swatches: presets, a custom picker, and optionally "none". */
-function swatchRow(cur, allowNone, onPick) {
+function swatchRow(cur, allowNone, onPick, presets = PRESETS, names = PRESET_NAMES) {
   const row = document.createElement('div');
   row.className = 'styl';
   const all = [];
   const custom = document.createElement('label');
   const mark = c => {
-    const isCustom = !!c && !PRESETS.includes(c);
+    const isCustom = !!c && !presets.includes(c);
     for (const [el, v] of all) el.classList.toggle('on', v === c);
     custom.classList.toggle('on', isCustom);
     custom.style.background = isCustom ? c : '';
@@ -1002,7 +1031,7 @@ function swatchRow(cur, allowNone, onPick) {
     row.appendChild(b); all.push([b, v]);
   };
   if (allowNone) add(null, 'none', 'No color');
-  PRESETS.forEach((c, i) => add(c, '', PRESET_NAMES[i]));
+  presets.forEach((c, i) => add(c, '', names[i]));
   custom.className = 'sw custom'; custom.title = 'Custom color';
   const inp = document.createElement('input');
   inp.type = 'color'; inp.value = cur || '#ffffff'; inp.setAttribute('aria-label', 'Custom color');
@@ -1041,22 +1070,13 @@ function openItemPop(id, anchorEl) {
   fmt.className = 'fmt';
   const btns = {};
   const toggle = k => { st[k] = !st[k]; btns[k].classList.toggle('on', st[k]); layoutChips(); save(); };
-  for (const [k, label, tip] of [['b', 'B', 'Bold (Ctrl+B)'], ['i', 'I', 'Italic (Ctrl+I)'], ['s', 'S', 'Strikethrough (Ctrl+Shift+S)']]) {
+  for (const [k, label, tip] of [['b', 'B', 'Bold'], ['i', 'I', 'Italic'], ['s', 'S', 'Strikethrough']]) {
     const b = toolBtn(label, tip, 'f-' + k);
     b.classList.toggle('on', !!st[k]);
     b.addEventListener('click', () => toggle(k));
     btns[k] = b; fmt.appendChild(b);
   }
   el.querySelector('.cap').appendChild(fmt);
-  el.addEventListener('keydown', e => {
-    if (!(e.ctrlKey || e.metaKey) || e.altKey) return;
-    const k = e.key.toLowerCase();
-    if (k === 'b' && !e.shiftKey) toggle('b');
-    else if (k === 'i' && !e.shiftKey) toggle('i');
-    else if (k === 's' && e.shiftKey) toggle('s');
-    else return;
-    e.preventDefault();
-  });
   el.append(ttl, ta, swatchRow(st.color || null, true, c => { st.color = c; layoutChips(); save(); }));
   showPop({ kind: 'item', id, anchor: chipRect(id) || elRect(anchorEl) }, el, ta);
 }
@@ -1122,22 +1142,63 @@ function setFont(k) {
   state.font = k;
   applyFont(); layoutChips(); save(); loadFaces();
 }
-function openFontPop() {
-  const el = popShell([], 'Font');
-  el.classList.add('narrow');
+function applySize() {
+  const k = SIZES[state.size].k;
+  CH = Math.round(28 * k); PADX = 12 * k; MAXTXT = 150 * k; FS = 13 * k; LFS = 15 * k;
+  const r = document.documentElement.style;
+  r.setProperty('--k', k); r.setProperty('--chip-h', CH + 'px');
+}
+function applyColors() {
+  const r = document.documentElement.style;
+  r.setProperty('--bg', state.bg); r.setProperty('--ink', state.ink);
+  document.querySelector('meta[name=theme-color]').content = state.bg;
+}
+
+/* ---------- style panel ---------- */
+function section(title, ...kids) {
+  const s = document.createElement('div');
+  s.className = 'sec';
+  const t = document.createElement('div');
+  t.className = 'sec-t'; t.textContent = title;
+  s.append(t, ...kids);
+  return s;
+}
+function pickOne(parent, b) { parent.querySelectorAll('button').forEach(x => x.classList.toggle('on', x === b)); }
+function openStylePop() {
+  const el = popShell([], 'Style');
+  el.classList.add('wide');
+  el.querySelector('.cap').remove();
+
   const grid = document.createElement('div');
   grid.className = 'fonts';
   for (const [k, f] of Object.entries(FONTS)) {
     const b = document.createElement('button');
     b.type = 'button'; b.className = 'fopt' + (state.font === k ? ' on' : '');
     b.innerHTML = `<b style='font-family:${f.css}'>Aa</b><small>${f.name}</small>`;
-    b.addEventListener('click', () => {
-      grid.querySelectorAll('.fopt').forEach(x => x.classList.toggle('on', x === b));
-      setFont(k);
-    });
+    b.addEventListener('click', () => { pickOne(grid, b); setFont(k); });
     grid.appendChild(b);
   }
-  el.appendChild(grid);
+
+  const seg = document.createElement('div');
+  seg.className = 'seg';
+  for (const [k, z] of Object.entries(SIZES)) {
+    const b = document.createElement('button');
+    b.type = 'button'; b.className = state.size === k ? 'on' : ''; b.title = z.name;
+    b.textContent = 'A'; b.style.fontSize = Math.round(14 * z.k) + 'px';
+    b.addEventListener('click', () => {
+      pickOne(seg, b);
+      state.size = k; applySize(); wcache = new Map(); relayout(); save();
+    });
+    seg.appendChild(b);
+  }
+
+  el.append(
+    section('Font', grid),
+    section('Text size', seg),
+    section('Background', swatchRow(state.bg, false, c => { state.bg = c; applyColors(); draw(); save(); }, BGS, BG_NAMES)),
+    section('Thoughts', swatchRow(state.chipColor, true, c => { state.chipColor = c; layoutChips(); save(); })),
+    section('Text', swatchRow(state.ink, false, c => { state.ink = c; applyColors(); save(); }, INKS, INK_NAMES)),
+  );
   showPop({ kind: 'font', anchor: elRect(fontBtn) }, el, null);
 }
 
@@ -1279,7 +1340,7 @@ hintEl.addEventListener('click', () => {
   if (ph) openInput(k, ph.x, ph.y);
 });
 addBtn.addEventListener('click', addSet);
-fontBtn.addEventListener('click', () => { if (ui.pop && ui.pop.kind === 'font') closePop(); else openFontPop(); });
+fontBtn.addEventListener('click', () => { if (ui.pop && ui.pop.kind === 'font') closePop(); else openStylePop(); });
 
 let lastTarget = null, mouse = { x: -1e4, y: -1e4 }, hoverRaf = 0;
 stage.addEventListener('pointermove', e => {
@@ -1314,7 +1375,7 @@ window.addEventListener('resize', () => {
   resizeT = setTimeout(() => stage.classList.remove('instant'), 150);
 });
 
-applyFont();
+applyFont(); applySize(); applyColors();
 relayout({ initial: true });
 loadFaces();
 })();
