@@ -298,6 +298,14 @@
     opacity: 0; transition: opacity .4s ease;
   }
   .empty-hint.show { opacity: 1; }
+
+  /* Bumped by hand in every commit that ships a change (see CLAUDE.md), so the live site can be checked at a glance. */
+  .version {
+    position: fixed; right: 8px; bottom: 8px; padding: 2px 6px; border-radius: 4px;
+    background: var(--surface); color: var(--muted);
+    font: 11px/1.2 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    opacity: .6; pointer-events: none; user-select: none;
+  }
 </style>
 </head>
 <body>
@@ -320,6 +328,7 @@
   <div id="marquee" class="marquee"></div>
   <div id="emptyHint" class="empty-hint">Click inside a circle to add a thought</div>
 </div>
+<div class="version">v0.0.10</div>
 
 <script>
 (() => {
