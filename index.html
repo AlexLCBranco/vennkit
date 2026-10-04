@@ -26,6 +26,7 @@
     --line-2: rgba(255, 255, 255, .16);
     --shadow: rgba(0, 0, 0, .45);
     --danger: #ff7b6e;
+    --sel: #96a5e6;
     --ease: cubic-bezier(.22, 1, .36, 1);
     --font: Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
   }
@@ -39,6 +40,7 @@
   #stage { position: fixed; inset: 0; user-select: none; -webkit-user-select: none; touch-action: none; }
   #stage.in-zone { cursor: pointer; }
   #stage.dragging, #stage.dragging * { cursor: grabbing !important; }
+  #stage.marquee, #stage.marquee * { cursor: crosshair !important; }
 
   svg#svg { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; overflow: visible; }
   #circles { filter: drop-shadow(0 10px 28px rgba(0, 0, 0, .35)); }
@@ -108,6 +110,8 @@
   }
   .chip span, .pchip span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .chip-pos:hover .chip { transform: translateY(-1px); box-shadow: 0 2px 4px var(--shadow), 0 6px 16px rgba(0, 0, 0, .35); background: var(--surface-hi); }
+  .chip-pos.sel .chip { border-color: color-mix(in srgb, var(--sel) 70%, transparent); box-shadow: 0 0 0 2px var(--bg), 0 0 0 3.5px var(--sel), 0 3px 10px rgba(0, 0, 0, .25); }
+  .chip-pos.follow { transition: transform .14s ease-out, opacity .3s ease; z-index: 9; }
   .chip-pos.dragging .chip { transform: scale(1.06) rotate(-1.5deg); box-shadow: 0 14px 30px rgba(0, 0, 0, .55), 0 2px 6px var(--shadow); }
   .chip-pos.doomed .chip { opacity: .6; color: var(--danger); border-color: rgba(255, 123, 110, .4); transform: scale(.94) rotate(-3deg); }
   .chip-pos.leaving .chip { opacity: 0; transform: scale(.5); }
@@ -257,6 +261,35 @@
   .fopt small { font: 500 11px var(--font); color: var(--muted); }
   .fopt.on { background: var(--surface-hi); border-color: var(--line-2); color: var(--ink); }
 
+  /* Marquee selection */
+  .marquee {
+    position: absolute; left: 0; top: 0; z-index: 15; pointer-events: none; display: none;
+    border: 1px solid color-mix(in srgb, var(--sel) 75%, transparent); border-radius: 4px;
+    background: color-mix(in srgb, var(--sel) 12%, transparent);
+  }
+  .marquee.on { display: block; }
+  .selbar {
+    position: absolute; top: 16px; left: 50%; z-index: 25;
+    max-width: calc(100vw - 120px); display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 8px;
+    padding: 6px 6px 6px 14px; border-radius: 16px;
+    background: var(--surface); border: 1px solid var(--line);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, .45), 0 2px 6px var(--shadow);
+    opacity: 0; transform: translate(-50%, -8px); pointer-events: none;
+    transition: opacity .2s ease, transform .25s var(--ease);
+  }
+  .selbar.show { opacity: 1; transform: translate(-50%, 0); pointer-events: auto; }
+  .selbar .n { font: 600 13px var(--font); color: var(--ink); white-space: nowrap; }
+  .selbar .fmt { display: flex; gap: 2px; }
+  .selbar .styl { margin: 0; padding: 0 0 0 8px; border-top: none; border-left: 1px solid var(--line); }
+  .selbar .ib {
+    width: 28px; height: 28px; padding: 0; border: none; border-radius: 50%; cursor: pointer;
+    display: grid; place-items: center; background: transparent; color: var(--muted);
+    transition: background .15s, color .15s;
+  }
+  .selbar .ib:hover { background: rgba(255, 255, 255, .06); color: var(--ink); }
+  .selbar .ib.del:hover { color: var(--danger); }
+  @media (max-width: 600px) { .selbar { top: 62px; max-width: calc(100vw - 32px); } }
+
   .empty-hint {
     position: absolute; left: 50%; bottom: 18px; transform: translateX(-50%);
     font-size: 13px; color: var(--faint); pointer-events: none; white-space: nowrap;
@@ -278,7 +311,9 @@
   <button id="hint" class="hint" aria-label="Add a thought here"></button>
   <button id="addCircle" class="addc" title="Add a circle" aria-label="Add a circle"></button>
   <button id="fontBtn" class="aa" title="Colors and text" aria-label="Colors and text"></button>
+  <div id="selBar" class="selbar" role="toolbar" aria-label="Selected thoughts"></div>
   <div id="floating" class="layer"></div>
+  <div id="marquee" class="marquee"></div>
   <div id="emptyHint" class="empty-hint">Click inside a circle to add a thought</div>
 </div>
 
@@ -330,11 +365,13 @@ const UNIT = {
 const ICON_PLUS = '<svg width="14" height="14" viewBox="0 0 16 16"><path d="M8 3v10M3 8h10" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" fill="none"/></svg>';
 const ICON_X = '<svg width="9" height="9" viewBox="0 0 10 10"><path d="M2 2l6 6M8 2l-6 6" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" fill="none"/></svg>';
 
+const ICON_TRASH = '<svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M2.5 4.5h11M6.5 4.5V3h3v1.5M4 4.5l.7 8.5h6.6l.7-8.5M6.8 7v3.8M9.2 7v3.8"/></svg>';
 const ICON_PALETTE = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"><path d="M12 3.2c-5 0-9 3.8-9 8.6 0 4.9 4 8.9 8.9 8.9 1.1 0 1.8-.7 1.8-1.6 0-.5-.2-.8-.5-1.2-.3-.3-.5-.7-.5-1.2 0-.9.8-1.6 1.7-1.6h2.1c2.9 0 5.3-2.3 5.3-5.2 0-4.2-4.3-6.7-9.8-6.7z"/><circle cx="7.6" cy="11.6" r="1.1" fill="currentColor" stroke="none"/><circle cx="10.2" cy="7.6" r="1.1" fill="currentColor" stroke="none"/><circle cx="14.8" cy="7.6" r="1.1" fill="currentColor" stroke="none"/><circle cx="17.4" cy="11.4" r="1.1" fill="currentColor" stroke="none"/></svg>';
 const $ = s => document.querySelector(s);
 const stage = $('#stage'), defs = $('#defs'), circlesG = $('#circles'), tint = $('#tint'), dim = $('#dim');
 const labelsL = $('#labels'), chipsL = $('#chips'), hintEl = $('#hint'), addBtn = $('#addCircle');
 const floatL = $('#floating'), emptyHint = $('#emptyHint'), fontBtn = $('#fontBtn');
+const selBar = $('#selBar'), marqEl = $('#marquee');
 hintEl.innerHTML = ICON_PLUS;
 fontBtn.innerHTML = ICON_PALETTE;
 addBtn.innerHTML = ICON_PLUS.replace(/14/g, '18');
@@ -573,17 +610,16 @@ function layoutZone(Z, ws) {
 
 let L = { pos: new Map(), hidden: new Map(), more: new Map(), ph: new Map(), w: new Map() };
 function computeLayout() {
-  const view = [];
-  let tail = null;
+  const view = [], tail = [];
   for (const it of state.items) {
     const k = keyOf(it.sets);
-    if (drag && drag.active && it.id === drag.id) {
+    if (drag && drag.active && drag.ids.has(it.id)) {
       if (!drag.target) continue;
-      if (drag.target !== k) { tail = { it, k: drag.target }; continue; }
+      if (drag.target !== k) { tail.push({ it, k: drag.target }); continue; }
     }
     view.push({ it, k });
   }
-  if (tail) view.push(tail);
+  view.push(...tail);
   const groups = new Map();
   for (const v of view) { if (!groups.has(v.k)) groups.set(v.k, []); groups.get(v.k).push(v.it); }
   L = { pos: new Map(), hidden: new Map(), more: new Map(), ph: new Map(), w: new Map() };
@@ -640,7 +676,8 @@ function applyLayout() {
     const sp = el.firstChild.firstChild;
     if (sp.textContent !== it.title) sp.textContent = it.title;
     styleChip(el.firstChild, it);
-    if (drag && drag.active && drag.id === it.id) continue;
+    el.classList.toggle('sel', sel.has(it.id));
+    if (drag && drag.active && drag.ids.has(it.id)) continue;
     const p = L.pos.get(it.id);
     if (p) {
       el.classList.remove('collapsed');
@@ -652,6 +689,7 @@ function applyLayout() {
     }
   }
   for (const [id, el] of chipEls) if (!live.has(id)) { chipEls.delete(id); kill(el); }
+  for (const id of sel) if (!live.has(id)) sel.delete(id);
 
   const liveM = new Set();
   for (const [k, m] of L.more) {
@@ -849,8 +887,8 @@ function applyFocus() {
   draw();
 }
 function updateHint() {
-  const dragging = drag && drag.active;
-  const k = !ui.pop && !ui.input && !dragging ? ui.hoverKey : null;
+  const dragging = drag && drag.active, marqOn = !!(marq && marq.on);
+  const k = !ui.pop && !ui.input && !dragging && !marqOn ? ui.hoverKey : null;
   const ph = k && L.ph.get(k);
   if (ph) {
     const jump = !hintEl.classList.contains('show') || hintEl.dataset.key !== k;
@@ -861,7 +899,7 @@ function updateHint() {
     hintEl.classList.add('show');
   } else hintEl.classList.remove('show');
 
-  const tk = dragging ? drag.target : ui.input ? ui.input.key : ui.pop ? null : ui.hoverKey;
+  const tk = dragging ? drag.target : marqOn ? null : ui.input ? ui.input.key : ui.pop ? null : ui.hoverKey;
   if (tk) tintKey = tk;
   tint.classList.toggle('on', !!tk);
   tint.classList.toggle('strong', !!dragging);
@@ -869,7 +907,7 @@ function updateHint() {
 }
 
 function layoutChips() {
-  computeLayout(); applyLayout(); applyFocus(); updateHint(); placePop();
+  computeLayout(); applyLayout(); applyFocus(); updateHint(); placePop(); renderSelBar();
 }
 function relayout(opts = {}) {
   computeGeo();
@@ -1254,7 +1292,7 @@ function onPressUp() {
     if (ui.pop && ui.pop.kind === 'more' && ui.pop.key === p.more) closePop(); else openMore(p.more);
   } else if (!p.fromPanel && ui.pop && ui.pop.kind === 'item' && ui.pop.id === p.id) {
     closePop();
-  } else openItemPop(p.id, p.el);
+  } else { clearSel(); openItemPop(p.id, p.el); }
 }
 function startDrag() {
   const it = item(press.id), el = chipEls.get(press.id);
@@ -1263,21 +1301,30 @@ function startDrag() {
   if (ui.input) commitInput();
   const r = press.el.getBoundingClientRect();
   const k = keyOf(it.sets);
+  // Grabbing a selected chip carries the whole selection along.
+  if (!sel.has(it.id)) clearSel();
+  const ids = sel.size > 1 ? state.items.filter(i => sel.has(i.id)).map(i => i.id) : [it.id];
   drag = {
-    id: it.id, el, active: true, w: L.w.get(it.id),
+    id: it.id, ids: new Set(ids), el, active: true, w: L.w.get(it.id),
+    followers: ids.filter(x => x !== it.id).map(x => ({ el: chipEls.get(x), w: L.w.get(x) })).filter(f => f.el),
     fx: clamp((press.sx - r.left) / r.width, 0, 1), fy: clamp((press.sy - r.top) / r.height, 0, 1),
     startKey: k, target: k,
   };
   el.classList.add('dragging');
   el.classList.remove('collapsed', 'dim', 'focus');
+  for (const f of drag.followers) { f.el.classList.add('follow'); f.el.classList.remove('collapsed', 'dim', 'focus'); }
   stage.classList.add('dragging');
   layoutChips();
 }
 function moveDrag(x, y) {
   const d = drag;
-  d.el.style.transform = xf(x - d.fx * d.w, y - d.fy * CH, 1);
+  const x0 = x - d.fx * d.w, y0 = y - d.fy * CH;
+  d.el.style.transform = xf(x0, y0, 1);
+  // Followers stack up behind the grabbed chip.
+  d.followers.forEach((f, i) => { const o = Math.min(i + 1, 4) * 5; f.el.style.transform = xf(x0 + o, y0 + o, 1); });
   const Z = hitTest(x, y), t = Z ? Z.key : null;
   d.el.classList.toggle('doomed', !t);
+  for (const f of d.followers) f.el.classList.toggle('doomed', !t);
   if (t !== d.target) { d.target = t; layoutChips(); }
 }
 function finishDrag(cancel) {
@@ -1285,17 +1332,109 @@ function finishDrag(cancel) {
   drag = null;
   stage.classList.remove('dragging');
   d.el.classList.remove('dragging', 'doomed');
-  const it = item(d.id);
-  const target = cancel ? d.startKey : d.target;
-  if (!target) {
-    state.items = state.items.filter(i => i !== it);
-  } else if (target !== d.startKey) {
-    it.sets = idsOf(target);
-    state.items = state.items.filter(i => i !== it);
-    state.items.push(it);
+  for (const f of d.followers) f.el.classList.remove('follow', 'doomed');
+  if (!cancel && !d.target) {
+    state.items = state.items.filter(i => !d.ids.has(i.id));
+  } else if (!cancel) {
+    const moved = state.items.filter(i => d.ids.has(i.id) && keyOf(i.sets) !== d.target);
+    for (const i of moved) i.sets = idsOf(d.target);
+    state.items = state.items.filter(i => !moved.includes(i)).concat(moved);
   }
   d.el.offsetWidth;   // re-enable transition before gliding into the slot
   layoutChips(); save();
+}
+
+/* ---------- marquee selection ---------- */
+const sel = new Set();
+let marq = null, selSig = '';
+function clearSel() {
+  if (!sel.size) return;
+  sel.clear();
+  for (const el of chipEls.values()) el.classList.remove('sel');
+  renderSelBar();
+}
+const selItems = () => state.items.filter(i => sel.has(i.id));
+function renderSelBar() {
+  selBar.classList.toggle('show', sel.size > 0 && !(drag && drag.active));
+  const sig = [...sel].join('|');
+  if (sig === selSig) return;
+  selSig = sig;
+  if (!sel.size) return;
+  selBar.innerHTML = '';
+  const n = document.createElement('span');
+  n.className = 'n'; n.textContent = `${sel.size} selected`;
+  const fmt = document.createElement('span');
+  fmt.className = 'fmt';
+  const its = selItems();
+  for (const [k, label, tip] of [['b', 'B', 'Bold'], ['i', 'I', 'Italic'], ['s', 'S', 'Strikethrough']]) {
+    const b = toolBtn(label, tip, 'f-' + k);
+    b.classList.toggle('on', its.every(i => i.style && i.style[k]));
+    b.addEventListener('click', () => {
+      const all = selItems(), on = !all.every(i => i.style && i.style[k]);
+      for (const i of all) (i.style || (i.style = {}))[k] = on;
+      b.classList.toggle('on', on); layoutChips(); save();
+    });
+    fmt.appendChild(b);
+  }
+  const colors = its.map(i => (i.style && i.style.color) || null);
+  const cur = colors.every(c => c === colors[0]) ? colors[0] : undefined;
+  const sw = swatchRow(cur, true, c => { for (const i of selItems()) (i.style || (i.style = {})).color = c; layoutChips(); save(); });
+  const iconBtn = (html, tip, cls, fn) => {
+    const b = document.createElement('button');
+    b.type = 'button'; b.className = 'ib' + (cls ? ' ' + cls : ''); b.title = tip; b.setAttribute('aria-label', tip);
+    b.innerHTML = html; b.addEventListener('click', fn);
+    return b;
+  };
+  const del = iconBtn(ICON_TRASH, 'Delete selected', 'del', () => {
+    state.items = state.items.filter(i => !sel.has(i.id));
+    sel.clear(); layoutChips(); save();
+  });
+  const done = iconBtn(ICON_X.replace(/"9"/g, '"11"'), 'Clear selection', '', clearSel);
+  selBar.append(n, fmt, sw, del, done);
+}
+
+stage.addEventListener('pointerdown', e => {
+  if (e.button !== 0 || drag || e.target.closest('.chip-pos, .label, .pop, .hint, .addc, .aa, .inputwrap, .selbar')) return;
+  marq = { sx: e.clientX, sy: e.clientY, on: false };
+  window.addEventListener('pointermove', onMarqMove);
+  window.addEventListener('pointerup', onMarqUp);
+  window.addEventListener('pointercancel', onMarqUp);
+});
+function onMarqMove(e) {
+  const m = marq;
+  if (!m) return;
+  if (!m.on) {
+    if (Math.hypot(e.clientX - m.sx, e.clientY - m.sy) < 5) return;
+    m.on = true;
+    clearSel();
+    stage.classList.add('marquee');
+    stage.classList.remove('in-zone');
+    marqEl.classList.add('on');
+    updateHint();
+  }
+  const x0 = Math.min(m.sx, e.clientX), y0 = Math.min(m.sy, e.clientY);
+  const x1 = Math.max(m.sx, e.clientX), y1 = Math.max(m.sy, e.clientY);
+  marqEl.style.transform = `translate(${x0}px,${y0}px)`;
+  marqEl.style.width = (x1 - x0) + 'px'; marqEl.style.height = (y1 - y0) + 'px';
+  sel.clear();
+  for (const id of L.pos.keys()) {
+    const r = chipRect(id);
+    if (r.x < x1 && r.x + r.w > x0 && r.y < y1 && r.y + r.h > y0) sel.add(id);
+  }
+  for (const [id, el] of chipEls) el.classList.toggle('sel', sel.has(id));
+  renderSelBar();
+}
+function onMarqUp() {
+  window.removeEventListener('pointermove', onMarqMove);
+  window.removeEventListener('pointerup', onMarqUp);
+  window.removeEventListener('pointercancel', onMarqUp);
+  const m = marq;
+  marq = null;
+  if (!m || !m.on) return;
+  swallow = true;   // the click that ends a marquee shouldn't add a thought
+  stage.classList.remove('marquee');
+  marqEl.classList.remove('on');
+  updateHint(); onHover();
 }
 
 /* ---------- events ---------- */
@@ -1320,7 +1459,8 @@ window.addEventListener('pointerdown', e => {
 
 stage.addEventListener('click', e => {
   if (swallow) { swallow = false; return; }
-  if (drag || e.target.closest('.chip-pos, .label, .pop, .hint, .addc, .aa, .inputwrap')) return;
+  if (drag || e.target.closest('.chip-pos, .label, .pop, .hint, .addc, .aa, .inputwrap, .selbar')) return;
+  if (sel.size) { clearSel(); return; }
   const Z = hitTest(e.clientX, e.clientY);
   if (!Z) return;
   if (Z.ids.length === 1) openInput(Z.key, e.clientX, e.clientY);
@@ -1350,8 +1490,8 @@ stage.addEventListener('pointermove', e => {
 document.addEventListener('pointerleave', () => { mouse.x = mouse.y = -1e4; lastTarget = null; onHover(); });
 function onHover() {
   hoverRaf = 0;
-  if (drag) return;
-  const overUI = lastTarget && lastTarget.closest && lastTarget.closest('.pop, .label, .addc, .aa, .inputwrap');
+  if (drag || (marq && marq.on)) return;
+  const overUI = lastTarget && lastTarget.closest && lastTarget.closest('.pop, .label, .addc, .aa, .inputwrap, .selbar');
   const sets = overUI ? [] : setsAt(mouse.x, mouse.y);
   const key = sets.length ? keyOf(sets) : null;
   ui.hoverSets = sets;
@@ -1365,6 +1505,7 @@ window.addEventListener('keydown', e => {
   if (drag) { window.removeEventListener('pointermove', onPressMove); press = null; finishDrag(true); }
   else if (ui.input) cancelInput();
   else if (ui.pop) closePop();
+  else clearSel();
 });
 
 let resizeT;
