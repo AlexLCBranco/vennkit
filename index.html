@@ -40,7 +40,7 @@
   #stage { position: fixed; inset: 0; user-select: none; -webkit-user-select: none; touch-action: none; }
   #stage.in-zone { cursor: pointer; }
   #stage.dragging, #stage.dragging * { cursor: grabbing !important; }
-  #stage.marquee, #stage.marquee * { cursor: crosshair !important; }
+  #stage.selecting, #stage.selecting * { cursor: crosshair !important; }
 
   svg#svg { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; overflow: visible; }
   #circles { filter: drop-shadow(0 10px 28px rgba(0, 0, 0, .35)); }
@@ -1407,7 +1407,7 @@ function onMarqMove(e) {
     if (Math.hypot(e.clientX - m.sx, e.clientY - m.sy) < 5) return;
     m.on = true;
     clearSel();
-    stage.classList.add('marquee');
+    stage.classList.add('selecting');
     stage.classList.remove('in-zone');
     marqEl.classList.add('on');
     updateHint();
@@ -1432,7 +1432,7 @@ function onMarqUp() {
   marq = null;
   if (!m || !m.on) return;
   swallow = true;   // the click that ends a marquee shouldn't add a thought
-  stage.classList.remove('marquee');
+  stage.classList.remove('selecting');
   marqEl.classList.remove('on');
   updateHint(); onHover();
 }
