@@ -7,7 +7,7 @@
 <title>Venn Kit</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:ital,wght@0,400;0,500;0,600;1,500;1,600&family=Fraunces:ital,wght@0,400;0,500;0,600;1,500;1,600&family=JetBrains+Mono:ital,wght@0,400;0,500;0,600;1,500;1,600&family=Nunito:ital,wght@0,400;0,500;0,600;1,500;1,600&display=swap" rel="stylesheet">
 <style>
   :root {
     color-scheme: dark;
@@ -111,6 +111,14 @@
   .chip-pos.enter .chip { animation: chipIn .5s var(--ease) both; }
   @keyframes chipIn { from { opacity: 0; transform: scale(.7); } }
   .chip-pos.focus .chip { box-shadow: 0 0 0 3px var(--bg), 0 0 0 4.5px rgba(255, 255, 255, .35), 0 12px 28px var(--shadow); }
+  .chip.b span, .pchip.b span { font-weight: 600; }
+  .chip.i span, .pchip.i span { font-style: italic; }
+  .chip.s span, .pchip.s span { text-decoration: line-through; opacity: .6; }
+  .chip.tinted, .pchip.tinted {
+    background: color-mix(in srgb, var(--cc) 20%, var(--surface));
+    border-color: color-mix(in srgb, var(--cc) 45%, transparent); color: var(--cc-ink);
+  }
+  .chip-pos:hover .chip.tinted, .pchip.tinted:hover { background: color-mix(in srgb, var(--cc) 28%, var(--surface-hi)); }
   .chip-pos.more .chip { background: rgba(255, 255, 255, .04); color: var(--muted); border-style: dashed; border-color: var(--line-2); box-shadow: none; }
 
   /* Zone hint */
@@ -138,6 +146,16 @@
   }
   .addc:hover { opacity: 1; transform: scale(1.08); color: var(--ink); }
   .addc.hide { opacity: 0; transform: scale(.6); pointer-events: none; }
+
+  /* Font button */
+  .aa {
+    position: absolute; top: 16px; right: 16px; width: 36px; height: 36px; padding: 0;
+    border-radius: 50%; border: none; cursor: pointer;
+    background: var(--surface); color: var(--muted); font: 600 13px var(--font);
+    box-shadow: 0 0 0 1px var(--line), 0 2px 6px var(--shadow);
+    opacity: .75; transition: opacity .2s, color .2s;
+  }
+  .aa:hover, .aa.on { opacity: 1; color: var(--ink); }
 
   /* Inline input */
   .inputwrap { position: absolute; transform: translate(-50%, -50%); pointer-events: auto; z-index: 20; }
@@ -186,6 +204,43 @@
   .pop .list { display: flex; flex-wrap: wrap; gap: 6px; max-height: 260px; overflow: auto; padding: 2px; }
   .pop .pchip { max-width: 100%; }
   .pop .pchip:hover { transform: translateY(-1px); }
+  .pop.narrow { width: 232px; }
+
+  /* Style controls */
+  .pop .fmt { display: flex; gap: 2px; margin-left: auto; flex: none; text-transform: none; letter-spacing: 0; }
+  .tb {
+    width: 24px; height: 22px; padding: 0; border: none; border-radius: 6px; cursor: pointer;
+    background: transparent; color: var(--muted); font: 600 13px/1 var(--font);
+    transition: background .15s, color .15s;
+  }
+  .tb:hover { background: rgba(255, 255, 255, .06); color: var(--ink-2); }
+  .tb.on { background: var(--surface-hi); color: var(--ink); box-shadow: inset 0 0 0 1px var(--line-2); }
+  .tb.f-i { font-style: italic; font-family: Fraunces, Georgia, serif; font-size: 14px; }
+  .tb.f-s { text-decoration: line-through; }
+  .styl { display: flex; align-items: center; gap: 6px; margin-top: 12px; padding-top: 11px; border-top: 1px solid var(--line); }
+  .sw {
+    position: relative; width: 18px; height: 18px; padding: 0; flex: none;
+    border: none; border-radius: 50%; cursor: pointer;
+    transition: transform .2s var(--ease), box-shadow .2s;
+  }
+  .sw:hover { transform: scale(1.15); }
+  .sw.on { box-shadow: 0 0 0 2px var(--surface), 0 0 0 3.5px var(--ink-2); }
+  .sw.none { background: transparent; box-shadow: inset 0 0 0 1.5px var(--line-2); overflow: hidden; }
+  .sw.none::after { content: ""; position: absolute; left: 50%; top: 2px; bottom: 2px; width: 1.5px; margin-left: -.75px; background: var(--muted); transform: rotate(45deg); }
+  .sw.none.on { box-shadow: inset 0 0 0 1.5px var(--line-2), 0 0 0 2px var(--surface), 0 0 0 3.5px var(--ink-2); }
+  .sw.custom { background: conic-gradient(#f06e60, #e6a23c, #42be8c, #3fb6d4, #6282f0, #a274f0, #e863a6, #f06e60); }
+  .sw.custom input { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer; border: none; padding: 0; }
+  .fonts { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+  .fopt {
+    height: 58px; border-radius: 10px; border: 1px solid var(--line); cursor: pointer;
+    background: rgba(255, 255, 255, .03); color: var(--ink-2);
+    display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px;
+    transition: background .15s, border-color .15s, color .15s;
+  }
+  .fopt:hover { background: rgba(255, 255, 255, .06); }
+  .fopt b { font-size: 19px; font-weight: 500; }
+  .fopt small { font: 500 11px var(--font); color: var(--muted); }
+  .fopt.on { background: var(--surface-hi); border-color: var(--line-2); color: var(--ink); }
 
   .empty-hint {
     position: absolute; left: 50%; bottom: 18px; transform: translateX(-50%);
@@ -207,6 +262,7 @@
   <div id="chips" class="layer"></div>
   <button id="hint" class="hint" aria-label="Add a thought here"></button>
   <button id="addCircle" class="addc" title="Add a circle" aria-label="Add a circle"></button>
+  <button id="fontBtn" class="aa" title="Font" aria-label="Choose font">Aa</button>
   <div id="floating" class="layer"></div>
   <div id="emptyHint" class="empty-hint">Click inside a circle to add a thought</div>
 </div>
@@ -217,16 +273,32 @@
 
 /* ---------- constants ---------- */
 const STORE = 'vennkit:v1';
-const FONT = 'Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif';
+const FONTS = {
+  sans: { name: 'Sans', css: 'Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif' },
+  serif: { name: 'Serif', css: 'Fraunces, Georgia, "Times New Roman", serif' },
+  mono: { name: 'Mono', css: '"JetBrains Mono", ui-monospace, Menlo, Consolas, monospace' },
+  round: { name: 'Rounded', css: 'Nunito, ui-rounded, system-ui, sans-serif' },
+};
+let FONT = FONTS.sans.css;
 const CH = 28, GAP = 6, RGAP = 7, PH = 28, EDGE = 10, MAXTXT = 150, PADX = 12;
 const SCALES = [1, .88, .76];
 const OFFS = [0, -.5, .5, -1, 1, -1.5, 1.5];
 const DUR = 650;
-const PALETTE = [
-  { fill: 'rgba(98,130,240,0.30)', stroke: 'rgba(140,168,255,0.55)', ink: '#9db5ff' },
-  { fill: 'rgba(240,110,96,0.28)', stroke: 'rgba(255,150,138,0.55)', ink: '#ffa498' },
-  { fill: 'rgba(66,190,140,0.28)', stroke: 'rgba(108,214,170,0.55)', ink: '#7fdcb4' },
-];
+const PRESETS = ['#6282f0', '#f06e60', '#42be8c', '#e6a23c', '#a274f0', '#e863a6', '#3fb6d4', '#8c93a8'];
+const PRESET_NAMES = ['Blue', 'Coral', 'Green', 'Amber', 'Violet', 'Pink', 'Teal', 'Slate'];
+const okHex = c => typeof c === 'string' && /^#[0-9a-f]{6}$/i.test(c);
+/* One base color -> circle fill, stroke and a readable text tint. */
+const tones = new Map();
+function tone(hex) {
+  let t = tones.get(hex);
+  if (t) return t;
+  const n = parseInt(hex.slice(1), 16), rgb = [n >> 16, n >> 8 & 255, n & 255];
+  const lum = (.299 * rgb[0] + .587 * rgb[1] + .114 * rgb[2]) / 255;
+  const mix = k => rgb.map(v => Math.round(v + (255 - v) * k)).join(',');
+  t = { fill: `rgba(${rgb.join(',')},0.30)`, stroke: `rgba(${mix(.3)},0.55)`, ink: `rgb(${mix(.4 + Math.max(0, .5 - lum) * .6)})` };
+  tones.set(hex, t);
+  return t;
+}
 // Unit layouts (radius = 1) for 1, 2, 3 circles.
 const UNIT = {
   1: [[0, 0]],
@@ -239,7 +311,7 @@ const ICON_X = '<svg width="9" height="9" viewBox="0 0 10 10"><path d="M2 2l6 6M
 const $ = s => document.querySelector(s);
 const stage = $('#stage'), defs = $('#defs'), circlesG = $('#circles'), tint = $('#tint'), dim = $('#dim');
 const labelsL = $('#labels'), chipsL = $('#chips'), hintEl = $('#hint'), addBtn = $('#addCircle');
-const floatL = $('#floating'), emptyHint = $('#emptyHint');
+const floatL = $('#floating'), emptyHint = $('#emptyHint'), fontBtn = $('#fontBtn');
 hintEl.innerHTML = ICON_PLUS;
 addBtn.innerHTML = ICON_PLUS.replace(/14/g, '18');
 
@@ -253,11 +325,12 @@ const idsOf = key => key ? key.split('|') : [];
 function defaultState() {
   return {
     sets: [
-      { id: 'a', name: 'Idea A', description: '', color: 0 },
-      { id: 'b', name: 'Idea B', description: '', color: 1 },
+      { id: 'a', name: 'Idea A', description: '', color: PRESETS[0] },
+      { id: 'b', name: 'Idea B', description: '', color: PRESETS[1] },
     ],
     items: [],
     zones: {},
+    font: 'sans',
   };
 }
 function load() {
@@ -267,7 +340,9 @@ function load() {
     const okId = id => typeof id === 'string' && /^[a-z0-9]+$/i.test(id);
     const used = new Set();
     s.sets = s.sets.filter(x => x && okId(x.id)).slice(0, 3).map(x => {
-      let color = [0, 1, 2].includes(x.color) && !used.has(x.color) ? x.color : [0, 1, 2].find(i => !used.has(i));
+      let color = typeof x.color === 'number' ? PRESETS[x.color] : x.color;
+      if (!okHex(color)) color = PRESETS.find(c => !used.has(c));
+      color = color.toLowerCase();
       used.add(color);
       return { id: x.id, name: String(x.name || 'Idea'), description: String(x.description || ''), color };
     });
@@ -276,7 +351,11 @@ function load() {
     s.items = s.items.filter(i => i && okId(i.id) && Array.isArray(i.sets)).map(i => ({
       id: i.id, title: String(i.title || '').trim() || 'Untitled', description: String(i.description || ''),
       sets: i.sets.filter(x => ids.has(x)),
+      style: i.style && typeof i.style === 'object'
+        ? { color: okHex(i.style.color) ? i.style.color.toLowerCase() : null, b: !!i.style.b, i: !!i.style.i, s: !!i.style.s }
+        : {},
     })).filter(i => i.sets.length);
+    s.font = FONTS[s.font] ? s.font : 'sans';
     s.zones = s.zones && typeof s.zones === 'object' ? s.zones : {};
     return s;
   } catch { return defaultState(); }
@@ -299,13 +378,24 @@ function zoneName(ids) {
 /* ---------- text measuring ---------- */
 const mctx = document.createElement('canvas').getContext('2d');
 let wcache = new Map();
-function textW(t, weight = 500, size = 13) {
-  const k = weight + '|' + size + '|' + t;
+function textW(t, weight = 500, size = 13, italic = false) {
+  const k = weight + '|' + size + '|' + italic + '|' + t;
   let w = wcache.get(k);
-  if (w == null) { mctx.font = `${weight} ${size}px ${FONT}`; w = mctx.measureText(t).width; wcache.set(k, w); }
+  if (w == null) { mctx.font = `${italic ? 'italic ' : ''}${weight} ${size}px ${FONT}`; w = mctx.measureText(t).width; wcache.set(k, w); }
   return w;
 }
-const chipW = t => Math.ceil(Math.min(textW(t), MAXTXT)) + PADX * 2 + 3;
+const chipW = it => {
+  const st = it.style || {};
+  return Math.ceil(Math.min(textW(it.title, st.b ? 600 : 500, 13, !!st.i), MAXTXT)) + PADX * 2 + 3;
+};
+function styleChip(c, it) {
+  const st = it.style || {};
+  c.classList.toggle('b', !!st.b);
+  c.classList.toggle('i', !!st.i);
+  c.classList.toggle('s', !!st.s);
+  c.classList.toggle('tinted', !!st.color);
+  if (st.color) { c.style.setProperty('--cc', st.color); c.style.setProperty('--cc-ink', tone(st.color).ink); }
+}
 const moreW = n => Math.ceil(textW(`+${n} more`)) + PADX * 2 + 3;
 
 /* ---------- geometry ---------- */
@@ -469,7 +559,7 @@ function computeLayout() {
   const groups = new Map();
   for (const v of view) { if (!groups.has(v.k)) groups.set(v.k, []); groups.get(v.k).push(v.it); }
   L = { pos: new Map(), hidden: new Map(), more: new Map(), ph: new Map(), w: new Map() };
-  for (const it of state.items) L.w.set(it.id, chipW(it.title));
+  for (const it of state.items) L.w.set(it.id, chipW(it));
   for (const Z of zones) {
     const list = groups.get(Z.key) || [];
     const lay = layoutZone(Z, list.map(it => L.w.get(it.id)));
@@ -521,6 +611,7 @@ function applyLayout() {
     el.style.width = w + 'px';
     const sp = el.firstChild.firstChild;
     if (sp.textContent !== it.title) sp.textContent = it.title;
+    styleChip(el.firstChild, it);
     if (drag && drag.active && drag.id === it.id) continue;
     const p = L.pos.get(it.id);
     if (p) {
@@ -609,7 +700,7 @@ function draw() {
   for (const [id, a] of anim) disp.set(id, cur(a, now));
   let c = '', cp = '';
   for (const [id, d] of disp) {
-    const p = PALETTE[anim.get(id).color] || PALETTE[0];
+    const p = tone(anim.get(id).color);
     c += `<circle class="c" cx="${f2(d.x)}" cy="${f2(d.y)}" r="${f2(Math.max(0, d.r))}" fill="${p.fill}" stroke="${p.stroke}" stroke-width="1.25" opacity="${f2(d.o)}"/>`;
     cp += `<clipPath id="cp-${id}">${circ(d, '#fff')}</clipPath>`;
   }
@@ -640,7 +731,7 @@ function renderLabels() {
       labelEls.set(s.id, el);
     }
     const inner = el.firstChild, nameEl = inner.querySelector('.name');
-    inner.style.color = PALETTE[s.color].ink;
+    inner.style.color = tone(s.color).ink;
     let inp = inner.querySelector('input');
     const renaming = ui.renaming === s.id;
     if (renaming && !inp) {
@@ -698,6 +789,7 @@ function focusInfo() {
     return L.pos.has(p.id) ? { type: 'item', id: p.id } : { type: 'zone', key: keyOf(it.sets) };
   }
   if (p.kind === 'set') return { type: 'set', id: p.id };
+  if (p.kind === 'font') return null;
   return { type: 'zone', key: p.key };
 }
 function applyFocus() {
@@ -724,6 +816,7 @@ function applyFocus() {
     el.firstChild.classList.toggle('dim', !lit);
   }
   addBtn.classList.toggle('hide', !!F || state.sets.length >= 3 || !!(drag && drag.active));
+  fontBtn.classList.toggle('on', !!(ui.pop && ui.pop.kind === 'font'));
   emptyHint.classList.toggle('show', !state.items.length && !ui.input && !ui.pop);
   draw();
 }
@@ -791,9 +884,9 @@ function commitInput() {
   const v = I.inp.value.trim();
   dropInput(I);
   if (v && zoneMap.has(I.key)) {
-    const it = { id: uid(), title: v, description: '', sets: idsOf(I.key) };
+    const it = { id: uid(), title: v, description: '', sets: idsOf(I.key), style: {} };
     state.items.push(it);
-    spawn.set(it.id, { x: I.x - chipW(v) / 2, y: I.y - CH / 2 });
+    spawn.set(it.id, { x: I.x - chipW(it) / 2, y: I.y - CH / 2 });
     layoutChips(); save();
   } else { applyFocus(); updateHint(); }
 }
@@ -815,8 +908,8 @@ function popShell(ids, caption) {
   dots.className = 'dots';
   for (const id of orderIds(ids)) {
     const d = document.createElement('span');
-    d.className = 'dot';
-    d.style.background = PALETTE[setById(id).color].ink;
+    d.className = 'dot'; d.dataset.id = id;
+    d.style.background = tone(setById(id).color).ink;
     dots.appendChild(d);
   }
   const ct = document.createElement('span');
@@ -888,6 +981,51 @@ function placePop() {
 }
 const elRect = el => { const r = el.getBoundingClientRect(); return { x: r.left, y: r.top, w: r.width, h: r.height }; };
 
+/* Color swatches: presets, a custom picker, and optionally "none". */
+function swatchRow(cur, allowNone, onPick) {
+  const row = document.createElement('div');
+  row.className = 'styl';
+  const all = [];
+  const custom = document.createElement('label');
+  const mark = c => {
+    const isCustom = !!c && !PRESETS.includes(c);
+    for (const [el, v] of all) el.classList.toggle('on', v === c);
+    custom.classList.toggle('on', isCustom);
+    custom.style.background = isCustom ? c : '';
+  };
+  const add = (v, cls, tip) => {
+    const b = document.createElement('button');
+    b.type = 'button'; b.className = 'sw' + (cls ? ' ' + cls : ''); b.title = tip; b.setAttribute('aria-label', tip);
+    if (v) b.style.background = v;
+    b.addEventListener('pointerdown', e => e.preventDefault());
+    b.addEventListener('click', () => { mark(v); onPick(v); });
+    row.appendChild(b); all.push([b, v]);
+  };
+  if (allowNone) add(null, 'none', 'No color');
+  PRESETS.forEach((c, i) => add(c, '', PRESET_NAMES[i]));
+  custom.className = 'sw custom'; custom.title = 'Custom color';
+  const inp = document.createElement('input');
+  inp.type = 'color'; inp.value = cur || '#ffffff'; inp.setAttribute('aria-label', 'Custom color');
+  inp.addEventListener('input', () => { mark(inp.value); onPick(inp.value); });
+  custom.appendChild(inp); row.appendChild(custom);
+  mark(cur);
+  return row;
+}
+function toolBtn(label, tip, cls) {
+  const b = document.createElement('button');
+  b.type = 'button'; b.className = 'tb ' + cls; b.textContent = label; b.title = tip; b.setAttribute('aria-label', tip);
+  b.addEventListener('pointerdown', e => e.preventDefault());
+  return b;
+}
+function setSetColor(s, c) {
+  s.color = c;
+  const a = anim.get(s.id);
+  if (a) a.color = c;
+  renderLabels(); draw();
+  if (popEl) popEl.querySelectorAll('.dot[data-id]').forEach(d => { const x = setById(d.dataset.id); if (x) d.style.background = tone(x.color).ink; });
+  save();
+}
+
 function openItemPop(id, anchorEl) {
   const it = item(id);
   if (!it) return;
@@ -898,7 +1036,28 @@ function openItemPop(id, anchorEl) {
   ttl.addEventListener('input', () => { it.title = ttl.value.trim() || orig; layoutChips(); save(); });
   ttl.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); closePop(); } });
   const ta = makeTextarea(it.description, 'Add a description…', v => { it.description = v; });
-  el.append(ttl, ta);
+  const st = it.style || (it.style = {});
+  const fmt = document.createElement('span');
+  fmt.className = 'fmt';
+  const btns = {};
+  const toggle = k => { st[k] = !st[k]; btns[k].classList.toggle('on', st[k]); layoutChips(); save(); };
+  for (const [k, label, tip] of [['b', 'B', 'Bold (Ctrl+B)'], ['i', 'I', 'Italic (Ctrl+I)'], ['s', 'S', 'Strikethrough (Ctrl+Shift+S)']]) {
+    const b = toolBtn(label, tip, 'f-' + k);
+    b.classList.toggle('on', !!st[k]);
+    b.addEventListener('click', () => toggle(k));
+    btns[k] = b; fmt.appendChild(b);
+  }
+  el.querySelector('.cap').appendChild(fmt);
+  el.addEventListener('keydown', e => {
+    if (!(e.ctrlKey || e.metaKey) || e.altKey) return;
+    const k = e.key.toLowerCase();
+    if (k === 'b' && !e.shiftKey) toggle('b');
+    else if (k === 'i' && !e.shiftKey) toggle('i');
+    else if (k === 's' && e.shiftKey) toggle('s');
+    else return;
+    e.preventDefault();
+  });
+  el.append(ttl, ta, swatchRow(st.color || null, true, c => { st.color = c; layoutChips(); save(); }));
   showPop({ kind: 'item', id, anchor: chipRect(id) || elRect(anchorEl) }, el, ta);
 }
 function openSetPop(id) {
@@ -906,7 +1065,7 @@ function openSetPop(id) {
   if (!s) return;
   const el = popShell([id], 'About this idea');
   const ta = makeTextarea(s.description, `What is ${s.name.trim() || 'this idea'} about?`, v => { s.description = v; });
-  el.appendChild(ta);
+  el.append(ta, swatchRow(s.color, false, c => setSetColor(s, c)));
   const lab = labelEls.get(id);
   showPop({ kind: 'set', id, anchor: elRect(lab.firstChild), prefer: geo[id].x < center.x - 1 ? 'left' : 'right' }, el, null);
   ui.renaming = id; ui.renameOrig = s.name;
@@ -934,6 +1093,7 @@ function openMore(key) {
     const c = document.createElement('div');
     c.className = 'pchip'; c.dataset.id = it.id;
     const sp = document.createElement('span'); sp.textContent = it.title;
+    styleChip(c, it);
     c.appendChild(sp); list.appendChild(c);
   }
   list.addEventListener('pointerdown', e => {
@@ -944,11 +1104,48 @@ function openMore(key) {
   showPop({ kind: 'more', key, anchor: elRect(m) }, el, null);
 }
 
+/* ---------- font ---------- */
+function applyFont() {
+  FONT = FONTS[state.font].css;
+  document.documentElement.style.setProperty('--font', FONT);
+  wcache = new Map();
+}
+/* Load every face chips can use, then re-measure (canvas measures with whatever is loaded). */
+function loadFaces() {
+  const k = state.font;
+  if (!document.fonts) return;
+  Promise.all(['500 13px', '600 13px', 'italic 500 13px', 'italic 600 13px', '600 15px']
+    .map(f => document.fonts.load(`${f} ${FONT}`))).catch(() => {}).then(() => { if (state.font === k) { wcache = new Map(); layoutChips(); } });
+}
+function setFont(k) {
+  if (state.font === k) return;
+  state.font = k;
+  applyFont(); layoutChips(); save(); loadFaces();
+}
+function openFontPop() {
+  const el = popShell([], 'Font');
+  el.classList.add('narrow');
+  const grid = document.createElement('div');
+  grid.className = 'fonts';
+  for (const [k, f] of Object.entries(FONTS)) {
+    const b = document.createElement('button');
+    b.type = 'button'; b.className = 'fopt' + (state.font === k ? ' on' : '');
+    b.innerHTML = `<b style='font-family:${f.css}'>Aa</b><small>${f.name}</small>`;
+    b.addEventListener('click', () => {
+      grid.querySelectorAll('.fopt').forEach(x => x.classList.toggle('on', x === b));
+      setFont(k);
+    });
+    grid.appendChild(b);
+  }
+  el.appendChild(grid);
+  showPop({ kind: 'font', anchor: elRect(fontBtn) }, el, null);
+}
+
 /* ---------- circles: add / remove ---------- */
 function addSet() {
   if (state.sets.length >= 3) return;
   const used = new Set(state.sets.map(s => s.color));
-  const color = [0, 1, 2].find(i => !used.has(i));
+  const color = PRESETS.find(c => !used.has(c)) || PRESETS[0];
   const names = new Set(state.sets.map(s => s.name.trim()));
   const ch = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('').find(c => !names.has('Idea ' + c));
   state.sets.push({ id: uid(), name: 'Idea ' + ch, description: '', color });
@@ -1051,7 +1248,7 @@ let swallow = false;
 window.addEventListener('pointerdown', e => {
   swallow = false;
   const t = e.target;
-  const keep = t.closest('.pop') || t.closest('.chip-pos') || (ui.renaming && t.closest('.label input'));
+  const keep = t.closest('.pop') || t.closest('.chip-pos') || t.closest('.aa') || (ui.renaming && t.closest('.label input'));
   if (ui.pop && !keep) {
     // Clicking another label opens its own popover; anything else just dismisses.
     if (!t.closest('.label .name')) swallow = true;
@@ -1062,7 +1259,7 @@ window.addEventListener('pointerdown', e => {
 
 stage.addEventListener('click', e => {
   if (swallow) { swallow = false; return; }
-  if (drag || e.target.closest('.chip-pos, .label, .pop, .hint, .addc, .inputwrap')) return;
+  if (drag || e.target.closest('.chip-pos, .label, .pop, .hint, .addc, .aa, .inputwrap')) return;
   const Z = hitTest(e.clientX, e.clientY);
   if (!Z) return;
   if (Z.ids.length === 1) openInput(Z.key, e.clientX, e.clientY);
@@ -1082,6 +1279,7 @@ hintEl.addEventListener('click', () => {
   if (ph) openInput(k, ph.x, ph.y);
 });
 addBtn.addEventListener('click', addSet);
+fontBtn.addEventListener('click', () => { if (ui.pop && ui.pop.kind === 'font') closePop(); else openFontPop(); });
 
 let lastTarget = null, mouse = { x: -1e4, y: -1e4 }, hoverRaf = 0;
 stage.addEventListener('pointermove', e => {
@@ -1092,7 +1290,7 @@ document.addEventListener('pointerleave', () => { mouse.x = mouse.y = -1e4; last
 function onHover() {
   hoverRaf = 0;
   if (drag) return;
-  const overUI = lastTarget && lastTarget.closest && lastTarget.closest('.pop, .label, .addc, .inputwrap');
+  const overUI = lastTarget && lastTarget.closest && lastTarget.closest('.pop, .label, .addc, .aa, .inputwrap');
   const sets = overUI ? [] : setsAt(mouse.x, mouse.y);
   const key = sets.length ? keyOf(sets) : null;
   ui.hoverSets = sets;
@@ -1116,8 +1314,9 @@ window.addEventListener('resize', () => {
   resizeT = setTimeout(() => stage.classList.remove('instant'), 150);
 });
 
+applyFont();
 relayout({ initial: true });
-if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => { wcache = new Map(); layoutChips(); });
+loadFaces();
 })();
 </script>
 </body>
