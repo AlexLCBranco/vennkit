@@ -1,0 +1,1113 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Venn Kit</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #f6f5f1;
+    --ink: #24262d;
+    --muted: #9a9ca5;
+    --ease: cubic-bezier(.22, 1, .36, 1);
+    --font: Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  }
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0; height: 100%; overflow: hidden;
+    background: radial-gradient(ellipse at 50% 42%, #fcfbf8 0%, #f3f1ec 100%) fixed var(--bg);
+    font-family: var(--font); color: var(--ink);
+    -webkit-font-smoothing: antialiased;
+  }
+  #stage { position: fixed; inset: 0; user-select: none; -webkit-user-select: none; touch-action: none; }
+  #stage.in-zone { cursor: pointer; }
+  #stage.dragging, #stage.dragging * { cursor: grabbing !important; }
+
+  svg#svg { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; overflow: visible; }
+  #circles { filter: drop-shadow(0 10px 28px rgba(60, 64, 100, .10)); }
+  #circles .c { mix-blend-mode: multiply; }
+  #tint { fill: #fff; opacity: 0; transition: opacity .25s ease; }
+  #tint.on { opacity: .34; }
+  #tint.on.strong { opacity: .55; }
+  #dim { fill: var(--bg); opacity: 0; transition: opacity .3s ease; }
+  #dim.on { opacity: .8; }
+
+  .layer { position: absolute; inset: 0; pointer-events: none; }
+
+  /* Circle labels */
+  .label { position: absolute; left: 0; top: 0; pointer-events: auto; will-change: transform; }
+  .label.leaving { pointer-events: none; }
+  .lab-in {
+    position: relative; display: flex; align-items: center;
+    font-size: 15px; font-weight: 600; letter-spacing: -.01em; white-space: nowrap;
+    transition: opacity .3s ease;
+  }
+  .lab-in.dim { opacity: .3; }
+  .label .name {
+    display: block; padding: 5px 9px; border-radius: 9px; cursor: text;
+    overflow: hidden; text-overflow: ellipsis;
+    transition: background .2s ease, box-shadow .2s ease;
+  }
+  .label .name:hover { background: rgba(255, 255, 255, .75); box-shadow: 0 1px 3px rgba(30, 35, 60, .06); }
+  .label input {
+    font: inherit; color: inherit; letter-spacing: inherit;
+    border: none; outline: none; padding: 5px 9px; border-radius: 9px;
+    background: #fff; box-shadow: 0 0 0 2px currentColor, 0 6px 18px rgba(30, 35, 60, .10);
+    min-width: 60px;
+  }
+  .lx {
+    position: absolute; left: 100%; top: 50%; margin: -10px 0 0 2px;
+    width: 20px; height: 20px; border-radius: 50%; border: none; padding: 0;
+    display: grid; place-items: center; cursor: pointer;
+    background: rgba(255, 255, 255, .9); color: #8b8e98;
+    box-shadow: 0 1px 4px rgba(30, 35, 60, .12);
+    opacity: 0; transform: scale(.6); pointer-events: none;
+    transition: opacity .2s ease, transform .25s var(--ease), color .2s, background .2s;
+  }
+  .lx:hover { color: #c0473d; background: #fff; }
+  .lab-in.can-x:hover .lx, .label.hover .lab-in.can-x .lx { opacity: 1; transform: none; pointer-events: auto; }
+  #stage.dragging .lx, #stage.focused .lx { opacity: 0 !important; pointer-events: none !important; }
+
+  /* Chips */
+  .chip-pos {
+    position: absolute; left: 0; top: 0; transform-origin: 0 0; pointer-events: auto;
+    transition: transform .65s var(--ease), opacity .3s ease;
+    will-change: transform;
+  }
+  .chip-pos.notrans, .instant .chip-pos, .instant .addc, .instant .pop { transition: none !important; }
+  .chip-pos.dim { opacity: .22; }
+  .chip-pos.collapsed, .chip-pos.collapsed.dim { opacity: 0; pointer-events: none; }
+  .chip-pos.dragging { transition: none; z-index: 10; }
+  .chip-pos.focus { z-index: 5; }
+  .chip, .pchip {
+    height: 28px; padding: 0 12px; border-radius: 999px;
+    display: flex; align-items: center; justify-content: center;
+    background: rgba(255, 255, 255, .95);
+    border: 1px solid rgba(30, 35, 60, .07);
+    box-shadow: 0 1px 2px rgba(30, 35, 60, .06), 0 3px 10px rgba(30, 35, 60, .05);
+    font: 500 13px/1 var(--font); color: #2a2d35;
+    cursor: pointer; white-space: nowrap;
+    transition: transform .25s var(--ease), box-shadow .25s ease, background .2s, color .2s, opacity .25s, border-color .2s;
+  }
+  .chip span, .pchip span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .chip-pos:hover .chip { transform: translateY(-1px); box-shadow: 0 2px 4px rgba(30, 35, 60, .07), 0 6px 16px rgba(30, 35, 60, .08); }
+  .chip-pos.dragging .chip { transform: scale(1.06) rotate(-1.5deg); box-shadow: 0 14px 30px rgba(30, 35, 60, .18), 0 2px 6px rgba(30, 35, 60, .08); }
+  .chip-pos.doomed .chip { opacity: .6; color: #c0473d; border-color: rgba(210, 80, 70, .35); transform: scale(.94) rotate(-3deg); }
+  .chip-pos.leaving .chip { opacity: 0; transform: scale(.5); }
+  .chip-pos.enter .chip { animation: chipIn .5s var(--ease) both; }
+  @keyframes chipIn { from { opacity: 0; transform: scale(.7); } }
+  .chip-pos.focus .chip { box-shadow: 0 0 0 3px #fff, 0 0 0 4.5px rgba(70, 80, 120, .28), 0 12px 28px rgba(30, 35, 60, .16); }
+  .chip-pos.more .chip { background: rgba(255, 255, 255, .62); color: #6b6e78; border-style: dashed; border-color: rgba(30, 35, 60, .16); box-shadow: none; }
+
+  /* Zone hint */
+  .hint {
+    position: absolute; left: 0; top: 0; width: 26px; height: 26px; padding: 0;
+    border-radius: 50%; border: 1.5px dashed rgba(40, 44, 70, .28);
+    background: rgba(255, 255, 255, .35); color: rgba(40, 44, 70, .45);
+    display: grid; place-items: center; cursor: pointer;
+    opacity: 0; pointer-events: none;
+    transition: opacity .2s ease, transform .5s var(--ease), background .2s, color .2s, border-color .2s;
+  }
+  .hint.notrans { transition: opacity .2s ease, background .2s, color .2s; }
+  .hint.show { opacity: 1; pointer-events: auto; }
+  .hint:hover { background: #fff; color: var(--ink); border-style: solid; border-color: rgba(40, 44, 70, .2); }
+
+  /* Add circle */
+  .addc {
+    position: absolute; width: 38px; height: 38px; margin: -19px 0 0 -19px; padding: 0;
+    border-radius: 50%; border: none; cursor: pointer;
+    display: grid; place-items: center;
+    background: #fff; color: #7a7d88;
+    box-shadow: 0 2px 6px rgba(30, 35, 60, .08), 0 8px 22px rgba(30, 35, 60, .07);
+    opacity: .75;
+    transition: left .65s var(--ease), top .65s var(--ease), opacity .25s ease, transform .3s var(--ease), color .2s;
+  }
+  .addc:hover { opacity: 1; transform: scale(1.08); color: var(--ink); }
+  .addc.hide { opacity: 0; transform: scale(.6); pointer-events: none; }
+
+  /* Inline input */
+  .inputwrap { position: absolute; transform: translate(-50%, -50%); pointer-events: auto; z-index: 20; }
+  .inputwrap input {
+    height: 32px; padding: 0 14px; border-radius: 999px;
+    border: 1px solid rgba(30, 35, 60, .1); outline: none; background: #fff;
+    font: 500 13px var(--font); color: var(--ink);
+    box-shadow: 0 0 0 4px rgba(120, 130, 170, .14), 0 10px 26px rgba(30, 35, 60, .12);
+    animation: popIn .28s var(--ease) both;
+    transition: width .15s ease;
+  }
+  .inputwrap input::placeholder { color: #b4b6bd; }
+  .inputwrap.out { opacity: 0; transition: opacity .15s ease; }
+  @keyframes popIn { from { opacity: 0; transform: scale(.88); } }
+
+  /* Popover */
+  .pop {
+    position: absolute; width: 280px; z-index: 30; pointer-events: auto;
+    background: #fff; border-radius: 14px; padding: 14px 16px 12px;
+    box-shadow: 0 16px 44px rgba(30, 35, 60, .14), 0 2px 8px rgba(30, 35, 60, .06);
+    border: 1px solid rgba(30, 35, 60, .05);
+    opacity: 0; transform: translateY(5px) scale(.98);
+    transition: opacity .2s ease, transform .25s var(--ease), left .45s var(--ease), top .45s var(--ease);
+    user-select: text; -webkit-user-select: text;
+  }
+  .pop.in { opacity: 1; transform: none; }
+  .pop .cap {
+    display: flex; align-items: center; gap: 6px; min-width: 0;
+    font-size: 11px; font-weight: 600; letter-spacing: .05em; text-transform: uppercase;
+    color: var(--muted); margin-bottom: 8px;
+  }
+  .pop .cap .dots { display: flex; gap: 3px; flex: none; }
+  .pop .cap .dot { width: 8px; height: 8px; border-radius: 50%; }
+  .pop .cap .ct { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .pop .ttl {
+    display: block; width: 100%; border: none; outline: none; background: transparent; padding: 0;
+    font: 600 16px/1.35 var(--font); color: var(--ink);
+  }
+  .pop textarea {
+    display: block; width: 100%; border: none; outline: none; background: transparent; padding: 0;
+    resize: none; min-height: 21px; max-height: 240px;
+    font: 400 14px/1.5 var(--font); color: #4a4d56;
+  }
+  .pop .ttl + textarea { margin-top: 6px; }
+  .pop textarea::placeholder, .pop .ttl::placeholder { color: #b8bac1; }
+  .pop .list { display: flex; flex-wrap: wrap; gap: 6px; max-height: 260px; overflow: auto; padding: 2px; }
+  .pop .pchip { max-width: 100%; }
+  .pop .pchip:hover { transform: translateY(-1px); }
+
+  .empty-hint {
+    position: absolute; left: 50%; bottom: 18px; transform: translateX(-50%);
+    font-size: 13px; color: #a7a9b0; pointer-events: none; white-space: nowrap;
+    opacity: 0; transition: opacity .4s ease;
+  }
+  .empty-hint.show { opacity: 1; }
+</style>
+</head>
+<body>
+<div id="stage">
+  <svg id="svg" xmlns="http://www.w3.org/2000/svg">
+    <defs id="defs"></defs>
+    <g id="circles"></g>
+    <rect id="tint" x="0" y="0" width="100%" height="100%" mask="url(#mh)"></rect>
+    <rect id="dim" x="0" y="0" width="100%" height="100%" mask="url(#mf)"></rect>
+  </svg>
+  <div id="labels" class="layer"></div>
+  <div id="chips" class="layer"></div>
+  <button id="hint" class="hint" aria-label="Add a thought here"></button>
+  <button id="addCircle" class="addc" title="Add a circle" aria-label="Add a circle"></button>
+  <div id="floating" class="layer"></div>
+  <div id="emptyHint" class="empty-hint">Click inside a circle to add a thought</div>
+</div>
+
+<script>
+(() => {
+'use strict';
+
+/* ---------- constants ---------- */
+const STORE = 'vennkit:v1';
+const FONT = 'Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif';
+const CH = 28, GAP = 6, RGAP = 7, PH = 28, EDGE = 10, MAXTXT = 150, PADX = 12;
+const SCALES = [1, .88, .76];
+const OFFS = [0, -.5, .5, -1, 1, -1.5, 1.5];
+const DUR = 650;
+const PALETTE = [
+  { fill: 'rgba(132,166,255,0.40)', stroke: 'rgba(96,128,224,0.42)', ink: '#3d5bb5' },
+  { fill: 'rgba(255,150,138,0.38)', stroke: 'rgba(222,110,98,0.42)', ink: '#b9534a' },
+  { fill: 'rgba(108,210,168,0.40)', stroke: 'rgba(66,166,126,0.42)', ink: '#2e8a66' },
+];
+// Unit layouts (radius = 1) for 1, 2, 3 circles.
+const UNIT = {
+  1: [[0, 0]],
+  2: [[-.55, 0], [.55, 0]],
+  3: [[-.52, -.3], [.52, -.3], [0, .6]],
+};
+const ICON_PLUS = '<svg width="14" height="14" viewBox="0 0 16 16"><path d="M8 3v10M3 8h10" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" fill="none"/></svg>';
+const ICON_X = '<svg width="9" height="9" viewBox="0 0 10 10"><path d="M2 2l6 6M8 2l-6 6" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" fill="none"/></svg>';
+
+const $ = s => document.querySelector(s);
+const stage = $('#stage'), defs = $('#defs'), circlesG = $('#circles'), tint = $('#tint'), dim = $('#dim');
+const labelsL = $('#labels'), chipsL = $('#chips'), hintEl = $('#hint'), addBtn = $('#addCircle');
+const floatL = $('#floating'), emptyHint = $('#emptyHint');
+hintEl.innerHTML = ICON_PLUS;
+addBtn.innerHTML = ICON_PLUS.replace(/14/g, '18');
+
+const uid = () => Math.random().toString(36).slice(2, 10);
+const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+const f2 = n => n.toFixed(2);
+const keyOf = ids => ids.slice().sort().join('|');
+const idsOf = key => key ? key.split('|') : [];
+
+/* ---------- data ---------- */
+function defaultState() {
+  return {
+    sets: [
+      { id: 'a', name: 'Idea A', description: '', color: 0 },
+      { id: 'b', name: 'Idea B', description: '', color: 1 },
+    ],
+    items: [],
+    zones: {},
+  };
+}
+function load() {
+  try {
+    const s = JSON.parse(localStorage.getItem(STORE));
+    if (!s || !Array.isArray(s.sets) || !s.sets.length || !Array.isArray(s.items)) return defaultState();
+    const okId = id => typeof id === 'string' && /^[a-z0-9]+$/i.test(id);
+    const used = new Set();
+    s.sets = s.sets.filter(x => x && okId(x.id)).slice(0, 3).map(x => {
+      let color = [0, 1, 2].includes(x.color) && !used.has(x.color) ? x.color : [0, 1, 2].find(i => !used.has(i));
+      used.add(color);
+      return { id: x.id, name: String(x.name || 'Idea'), description: String(x.description || ''), color };
+    });
+    if (!s.sets.length) return defaultState();
+    const ids = new Set(s.sets.map(x => x.id));
+    s.items = s.items.filter(i => i && okId(i.id) && Array.isArray(i.sets)).map(i => ({
+      id: i.id, title: String(i.title || '').trim() || 'Untitled', description: String(i.description || ''),
+      sets: i.sets.filter(x => ids.has(x)),
+    })).filter(i => i.sets.length);
+    s.zones = s.zones && typeof s.zones === 'object' ? s.zones : {};
+    return s;
+  } catch { return defaultState(); }
+}
+let state = load();
+let saveT;
+function save() {
+  clearTimeout(saveT);
+  saveT = setTimeout(() => { try { localStorage.setItem(STORE, JSON.stringify(state)); } catch {} }, 150);
+}
+const item = id => state.items.find(i => i.id === id);
+const setById = id => state.sets.find(s => s.id === id);
+const orderIds = ids => state.sets.map(s => s.id).filter(id => ids.includes(id));
+function zoneName(ids) {
+  const n = orderIds(ids).map(id => setById(id).name.trim() || 'Untitled');
+  if (n.length <= 1) return n[0] || '';
+  return n.slice(0, -1).join(', ') + ' & ' + n[n.length - 1];
+}
+
+/* ---------- text measuring ---------- */
+const mctx = document.createElement('canvas').getContext('2d');
+let wcache = new Map();
+function textW(t, weight = 500, size = 13) {
+  const k = weight + '|' + size + '|' + t;
+  let w = wcache.get(k);
+  if (w == null) { mctx.font = `${weight} ${size}px ${FONT}`; w = mctx.measureText(t).width; wcache.set(k, w); }
+  return w;
+}
+const chipW = t => Math.ceil(Math.min(textW(t), MAXTXT)) + PADX * 2 + 3;
+const moreW = n => Math.ceil(textW(`+${n} more`)) + PADX * 2 + 3;
+
+/* ---------- geometry ---------- */
+let W = innerWidth, H = innerHeight, geo = {}, center = { x: 0, y: 0, r: 100 };
+let zones = [], zoneMap = new Map(), geoSig = '';
+
+function computeGeo() {
+  W = innerWidth; H = innerHeight;
+  const n = state.sets.length, u = UNIT[n];
+  let x0 = Infinity, x1 = -Infinity, y0 = Infinity, y1 = -Infinity;
+  for (const [x, y] of u) { x0 = Math.min(x0, x - 1); x1 = Math.max(x1, x + 1); y0 = Math.min(y0, y - 1); y1 = Math.max(y1, y + 1); }
+  const padX = clamp(W * .04, 16, 48), padT = 70, padB = n < 3 ? 92 : 70;
+  const r = clamp(Math.min((W - 2 * padX) / (x1 - x0), (H - padT - padB) / (y1 - y0)), 60, 330);
+  const cx = W / 2 - (x0 + x1) / 2 * r;
+  const cy = padT + (H - padT - padB) / 2 - (y0 + y1) / 2 * r;
+  center = { x: cx, y: cy, r };
+  geo = {};
+  state.sets.forEach((s, i) => { geo[s.id] = { x: cx + u[i][0] * r, y: cy + u[i][1] * r, r }; });
+  const sig = JSON.stringify(geo);
+  if (sig !== geoSig) { geoSig = sig; computeZones(); }
+}
+
+function depth(Z, x, y) {
+  let d = Infinity;
+  for (const c of Z.in) d = Math.min(d, c.r - Math.hypot(x - c.x, y - c.y));
+  for (const c of Z.out) d = Math.min(d, Math.hypot(x - c.x, y - c.y) - c.r);
+  return d;
+}
+function findPole(Z) {
+  // Visual center: centroid of the zone's deepest area (stable and symmetric,
+  // unlike the raw max, which sits on a nearly flat ridge).
+  const c0 = Z.in[0], st = c0.r / 40, pts = [];
+  let max = -Infinity;
+  for (let i = -40; i <= 40; i++)
+    for (let j = -40; j <= 40; j++) {
+      const x = c0.x + i * st, y = c0.y + j * st, d = depth(Z, x, y);
+      if (d > 0) { pts.push(x, y, d); if (d > max) max = d; }
+    }
+  let sx = 0, sy = 0, n = 0;
+  for (let k = 0; k < pts.length; k += 3) if (pts[k + 2] >= max * .9) { sx += pts[k]; sy += pts[k + 1]; n++; }
+  const p = n ? { x: sx / n, y: sy / n } : { x: c0.x, y: c0.y };
+  p.d = depth(Z, p.x, p.y);
+  return p;
+}
+function computeZones() {
+  const ids = state.sets.map(s => s.id), n = ids.length;
+  zones = []; zoneMap = new Map();
+  for (let m = 1; m < (1 << n); m++) {
+    const inn = [], out = [], zids = [];
+    ids.forEach((id, i) => { if (m & (1 << i)) { inn.push(geo[id]); zids.push(id); } else out.push(geo[id]); });
+    const Z = { key: keyOf(zids), ids: zids, in: inn, out };
+    Z.ymin = Math.max(...inn.map(c => c.y - c.r));
+    Z.ymax = Math.min(...inn.map(c => c.y + c.r));
+    Z.pole = findPole(Z);
+    zones.push(Z); zoneMap.set(Z.key, Z);
+  }
+}
+function setsAt(x, y) {
+  return state.sets.filter(s => { const g = geo[s.id]; return Math.hypot(x - g.x, y - g.y) <= g.r; }).map(s => s.id);
+}
+function hitTest(x, y) {
+  const ids = setsAt(x, y);
+  return ids.length ? zoneMap.get(keyOf(ids)) : null;
+}
+
+/* Horizontal free intervals of a zone at height y (inset by EDGE). */
+const clipIv = (iv, a, b) => iv.map(([l, h]) => [Math.max(l, a), Math.min(h, b)]).filter(([l, h]) => h > l);
+const cutIv = (iv, a, b) => iv.flatMap(([l, h]) => [[l, Math.min(h, a)], [Math.max(l, b), h]]).filter(([l, h]) => h > l);
+function ivAt(Z, y) {
+  let iv = [[-Infinity, Infinity]];
+  for (const c of Z.in) {
+    const rr = c.r - EDGE, dy = y - c.y;
+    if (rr <= 0 || Math.abs(dy) >= rr) return [];
+    const h = Math.sqrt(rr * rr - dy * dy);
+    iv = clipIv(iv, c.x - h, c.x + h);
+  }
+  for (const c of Z.out) {
+    const rr = c.r + EDGE, dy = y - c.y;
+    if (Math.abs(dy) >= rr) continue;
+    const h = Math.sqrt(rr * rr - dy * dy);
+    iv = cutIv(iv, c.x - h, c.x + h);
+  }
+  return iv;
+}
+/* Intervals valid for the whole band [y0, y1]. */
+function band(Z, y0, y1) {
+  let iv = ivAt(Z, y0);
+  const ys = [y1];
+  for (const c of Z.out) if (c.y > y0 && c.y < y1) ys.push(c.y);
+  for (const y of ys) {
+    if (!iv.length) break;
+    const o = ivAt(Z, y);
+    iv = iv.flatMap(([l, h]) => o.map(([a, b]) => [Math.max(l, a), Math.min(h, b)])).filter(([l, h]) => h > l);
+  }
+  return iv;
+}
+
+/* ---------- zone layout ---------- */
+function tryPack(Z, ws, s) {
+  const h = CH * s, gap = GAP * s, step = h + RGAP * s, n = ws.length, P = Z.pole;
+  const span = Z.ymax - Z.ymin - 2 * EDGE;
+  for (let k = 1; k * step - RGAP * s <= span + .5; k++) {
+    for (const off of OFFS) {
+      const base = P.y + off * step, slots = [];
+      let idx = 0;
+      for (let i = 0; i < k && idx < n; i++) {
+        const yc = base + (i - (k - 1) / 2) * step;
+        const iv = band(Z, yc - h / 2, yc + h / 2);
+        if (!iv.length) continue;
+        let best = null;
+        for (const v of iv) {
+          if (P.x >= v[0] && P.x <= v[1]) { best = v; break; }
+          if (!best || v[1] - v[0] > best[1] - best[0]) best = v;
+        }
+        const avail = best[1] - best[0], row = [];
+        let used = 0;
+        while (idx < n) {
+          const w = ws[idx] * s, need = used + (row.length ? gap : 0) + w;
+          if (need > avail) break;
+          row.push(w); used = need; idx++;
+        }
+        if (!row.length) continue;
+        let x = clamp(P.x, best[0] + used / 2, best[1] - used / 2) - used / 2;
+        for (const w of row) { slots.push({ x: x + w / 2, y: yc, s }); x += w + gap; }
+      }
+      if (idx === n) return slots;
+    }
+  }
+  return null;
+}
+/* Shrink first, then collapse into "+N more". A slot for the "+" hint is always reserved last. */
+function layoutZone(Z, ws) {
+  for (const s of SCALES) {
+    const r = tryPack(Z, [...ws, PH], s);
+    if (r) return { s, slots: r.slice(0, ws.length), ph: r[ws.length], more: null };
+  }
+  const s = SCALES[SCALES.length - 1], n = ws.length;
+  for (let m = n - 1; m >= 0; m--) {
+    const mw = moreW(n - m);
+    const r = tryPack(Z, [...ws.slice(0, m), mw, PH], s);
+    if (r) return { s, slots: r.slice(0, m), more: { ...r[m], w: mw, n: n - m }, ph: r[m + 1] };
+  }
+  const P = Z.pole;
+  if (!n) return { s, slots: [], ph: { x: P.x, y: P.y, s }, more: null };
+  return { s, slots: [], ph: null, more: { x: P.x, y: P.y, s, w: moreW(n), n } };
+}
+
+let L = { pos: new Map(), hidden: new Map(), more: new Map(), ph: new Map(), w: new Map() };
+function computeLayout() {
+  const view = [];
+  let tail = null;
+  for (const it of state.items) {
+    const k = keyOf(it.sets);
+    if (drag && drag.active && it.id === drag.id) {
+      if (!drag.target) continue;
+      if (drag.target !== k) { tail = { it, k: drag.target }; continue; }
+    }
+    view.push({ it, k });
+  }
+  if (tail) view.push(tail);
+  const groups = new Map();
+  for (const v of view) { if (!groups.has(v.k)) groups.set(v.k, []); groups.get(v.k).push(v.it); }
+  L = { pos: new Map(), hidden: new Map(), more: new Map(), ph: new Map(), w: new Map() };
+  for (const it of state.items) L.w.set(it.id, chipW(it.title));
+  for (const Z of zones) {
+    const list = groups.get(Z.key) || [];
+    const lay = layoutZone(Z, list.map(it => L.w.get(it.id)));
+    list.forEach((it, i) => {
+      if (i < lay.slots.length) L.pos.set(it.id, lay.slots[i]);
+      else L.hidden.set(it.id, Z.key);
+    });
+    if (lay.more) L.more.set(Z.key, lay.more);
+    if (lay.ph) L.ph.set(Z.key, lay.ph);
+  }
+}
+
+/* ---------- chips DOM ---------- */
+const chipEls = new Map(), moreEls = new Map(), spawn = new Map();
+const xf = (x, y, s) => `translate3d(${f2(x)}px,${f2(y)}px,0) scale(${s})`;
+function makeChipEl(cls) {
+  const el = document.createElement('div');
+  el.className = 'chip-pos' + (cls ? ' ' + cls : '');
+  const c = document.createElement('div'); c.className = 'chip';
+  c.appendChild(document.createElement('span'));
+  el.appendChild(c);
+  chipsL.appendChild(el);
+  return el;
+}
+function place(el, t, fresh, id) {
+  if (fresh) {
+    const sp = id && spawn.get(id);
+    el.classList.add('notrans');
+    if (sp) { spawn.delete(id); el.style.transform = xf(sp.x, sp.y, 1); }
+    else { el.style.transform = t; el.classList.add('enter'); }
+    el.offsetWidth;
+    el.classList.remove('notrans');
+    if (!sp) return;
+  }
+  el.style.transform = t;
+}
+function kill(el) {
+  el.classList.add('leaving');
+  el.style.pointerEvents = 'none';
+  setTimeout(() => el.remove(), 380);
+}
+function applyLayout() {
+  const live = new Set();
+  for (const it of state.items) {
+    live.add(it.id);
+    let el = chipEls.get(it.id), fresh = false;
+    if (!el) { el = makeChipEl(); el.dataset.id = it.id; chipEls.set(it.id, el); fresh = true; }
+    const w = L.w.get(it.id);
+    el.style.width = w + 'px';
+    const sp = el.firstChild.firstChild;
+    if (sp.textContent !== it.title) sp.textContent = it.title;
+    if (drag && drag.active && drag.id === it.id) continue;
+    const p = L.pos.get(it.id);
+    if (p) {
+      el.classList.remove('collapsed');
+      place(el, xf(p.x - w * p.s / 2, p.y - CH * p.s / 2, p.s), fresh, it.id);
+    } else {
+      const m = L.more.get(L.hidden.get(it.id));
+      el.classList.add('collapsed');
+      if (m) place(el, xf(m.x - w * m.s / 2, m.y - CH * m.s / 2, m.s), fresh, it.id);
+    }
+  }
+  for (const [id, el] of chipEls) if (!live.has(id)) { chipEls.delete(id); kill(el); }
+
+  const liveM = new Set();
+  for (const [k, m] of L.more) {
+    liveM.add(k);
+    let el = moreEls.get(k), fresh = false;
+    if (!el) { el = makeChipEl('more'); el.dataset.more = k; moreEls.set(k, el); fresh = true; }
+    el.firstChild.firstChild.textContent = `+${m.n} more`;
+    el.style.width = m.w + 'px';
+    place(el, xf(m.x - m.w * m.s / 2, m.y - CH * m.s / 2, m.s), fresh);
+  }
+  for (const [k, el] of moreEls) if (!liveM.has(k)) { moreEls.delete(k); kill(el); }
+}
+function chipRect(id) {
+  const p = L.pos.get(id);
+  if (!p) return null;
+  const w = L.w.get(id);
+  return { x: p.x - w * p.s / 2, y: p.y - CH * p.s / 2, w: w * p.s, h: CH * p.s };
+}
+
+/* ---------- circles: tween + draw ---------- */
+const anim = new Map();   // setId -> { from, to, t0, color, leaving }
+let raf = 0;
+const ease = t => 1 - Math.pow(1 - t, 5);
+function cur(a, now) {
+  const e = ease(clamp((now - a.t0) / DUR, 0, 1)), o = {};
+  for (const k of ['x', 'y', 'r', 'o']) o[k] = a.from[k] + (a.to[k] - a.from[k]) * e;
+  return o;
+}
+const same = (a, b) => Math.abs(a.x - b.x) < .01 && Math.abs(a.y - b.y) < .01 && Math.abs(a.r - b.r) < .01 && a.o === b.o;
+function setTargets(instant, initial) {
+  const now = performance.now(), live = new Set();
+  for (const s of state.sets) {
+    live.add(s.id);
+    const g = geo[s.id], to = { x: g.x, y: g.y, r: g.r, o: 1 };
+    let a = anim.get(s.id);
+    if (!a) {
+      const from = initial ? { ...to, r: g.r * .86, o: 0 } : { ...to, r: 0, o: 0 };
+      anim.set(s.id, { from, to, t0: now, color: s.color });
+    } else if (instant) {
+      a.from = a.to = to; a.t0 = now - DUR;
+    } else if (!same(a.to, to)) {
+      a.from = cur(a, now); a.to = to; a.t0 = now;
+    }
+  }
+  for (const [id, a] of anim) if (!live.has(id) && !a.leaving) {
+    const c = cur(a, now);
+    a.from = c; a.to = { ...c, r: c.r * .7, o: 0 }; a.t0 = now; a.leaving = true;
+  }
+  kick();
+}
+function kick() { if (!raf) raf = requestAnimationFrame(tick); }
+function tick(now) {
+  raf = 0;
+  let moving = false;
+  for (const [id, a] of anim) {
+    if (now - a.t0 < DUR) moving = true;
+    else if (a.leaving) { anim.delete(id); const el = labelEls.get(id); if (el) el.remove(); labelEls.delete(id); }
+  }
+  draw();
+  if (moving) raf = requestAnimationFrame(tick);
+}
+const circ = (d, fill) => `<circle cx="${f2(d.x)}" cy="${f2(d.y)}" r="${f2(Math.max(0, d.r))}" fill="${fill}"/>`;
+function zoneShape(key, disp, live, on, off) {
+  const ins = idsOf(key).filter(id => disp.has(id));
+  if (!ins.length) return '';
+  const full = `x="0" y="0" width="${W}" height="${H}"`;
+  let inner = `<rect ${full} fill="${on}"/>` + live.filter(id => !ins.includes(id)).map(id => circ(disp.get(id), off)).join('');
+  for (const id of ins) inner = `<g clip-path="url(#cp-${id})">${inner}</g>`;
+  return inner;
+}
+let tintKey = null, lastFocus = null;
+function draw() {
+  const now = performance.now(), disp = new Map();
+  for (const [id, a] of anim) disp.set(id, cur(a, now));
+  let c = '', cp = '';
+  for (const [id, d] of disp) {
+    const p = PALETTE[anim.get(id).color] || PALETTE[0];
+    c += `<circle class="c" cx="${f2(d.x)}" cy="${f2(d.y)}" r="${f2(Math.max(0, d.r))}" fill="${p.fill}" stroke="${p.stroke}" stroke-width="1.25" opacity="${f2(d.o)}"/>`;
+    cp += `<clipPath id="cp-${id}">${circ(d, '#fff')}</clipPath>`;
+  }
+  circlesG.innerHTML = c;
+  const live = [...disp.keys()].filter(id => !anim.get(id).leaving);
+  const full = `x="0" y="0" width="${W}" height="${H}"`;
+  const mh = `<mask id="mh" maskUnits="userSpaceOnUse" ${full}><rect ${full} fill="#000"/>${tintKey ? zoneShape(tintKey, disp, live, '#fff', '#000') : ''}</mask>`;
+  let hole = '';
+  const F = lastFocus;
+  if (F && F.type === 'set' && disp.has(F.id)) hole = circ(disp.get(F.id), '#000');
+  else if (F && F.type === 'zone') hole = zoneShape(F.key, disp, live, '#000', '#fff');
+  const mf = `<mask id="mf" maskUnits="userSpaceOnUse" ${full}><rect ${full} fill="#fff"/>${hole}</mask>`;
+  defs.innerHTML = cp + mh + mf;
+  positionLabels(disp);
+}
+
+/* ---------- labels ---------- */
+const labelEls = new Map();
+function renderLabels() {
+  const canX = state.sets.length > 1;
+  for (const s of state.sets) {
+    let el = labelEls.get(s.id);
+    if (!el) {
+      el = document.createElement('div');
+      el.className = 'label'; el.dataset.id = s.id;
+      el.innerHTML = `<div class="lab-in"><span class="name"></span><button class="lx" title="Remove circle" aria-label="Remove circle">${ICON_X}</button></div>`;
+      labelsL.appendChild(el);
+      labelEls.set(s.id, el);
+    }
+    const inner = el.firstChild, nameEl = inner.querySelector('.name');
+    inner.style.color = PALETTE[s.color].ink;
+    let inp = inner.querySelector('input');
+    const renaming = ui.renaming === s.id;
+    if (renaming && !inp) {
+      inp = document.createElement('input');
+      inp.value = s.name; inp.spellcheck = false; inp.maxLength = 60;
+      nameEl.style.display = 'none';
+      inner.insertBefore(inp, nameEl);
+      hookRename(inp, s);
+      sizeRename(inp);
+    } else if (!renaming && inp) {
+      inp.remove(); nameEl.style.display = '';
+    }
+    nameEl.textContent = s.name;
+    nameEl.style.maxWidth = clamp((geo[s.id] ? geo[s.id].r : 200) * 1.05, 90, 260) + 'px';
+    inner.classList.toggle('can-x', canX && !renaming);
+  }
+}
+function positionLabels(disp) {
+  for (const [id, a] of anim) {
+    const el = labelEls.get(id), d = disp.get(id);
+    if (!el || !d) continue;
+    const below = a.to.y > center.y + 1;
+    const y = below ? d.y + d.r + 10 : d.y - d.r - 10;
+    el.style.transform = `translate(${f2(d.x)}px,${f2(y)}px) translate(-50%,${below ? '0' : '-100%'})`;
+    el.style.opacity = f2(d.o);
+  }
+}
+function sizeRename(inp) { inp.style.width = clamp(textW(inp.value || ' ', 600, 15) + 22, 60, 280) + 'px'; }
+function hookRename(inp, s) {
+  inp.addEventListener('input', () => {
+    s.name = inp.value; sizeRename(inp); save();
+    const ta = popEl && popEl.querySelector('textarea');
+    if (ta) ta.placeholder = `What is ${s.name.trim() || 'this idea'} about?`;
+  });
+  inp.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); closePop(); } });
+}
+
+/* ---------- UI state ---------- */
+const ui = { hoverKey: null, hoverSets: [], input: null, pop: null, renaming: null, renameOrig: '' };
+let popEl = null, drag = null, press = null;
+
+function positionAddBtn() {
+  const n = state.sets.length;
+  let x, y;
+  if (n === 1) { x = Math.min(center.x + center.r + 46, W - 30); y = center.y; }
+  else { x = center.x; y = Math.min(center.y + center.r + 38, H - 30); }
+  addBtn.style.left = x + 'px'; addBtn.style.top = y + 'px';
+}
+function focusInfo() {
+  const p = ui.pop;
+  if (!p) return null;
+  if (p.kind === 'item') {
+    const it = item(p.id);
+    if (!it) return null;
+    return L.pos.has(p.id) ? { type: 'item', id: p.id } : { type: 'zone', key: keyOf(it.sets) };
+  }
+  if (p.kind === 'set') return { type: 'set', id: p.id };
+  return { type: 'zone', key: p.key };
+}
+function applyFocus() {
+  const F = focusInfo();
+  if (F) lastFocus = F;
+  dim.classList.toggle('on', !!F);
+  stage.classList.toggle('focused', !!F);
+  for (const it of state.items) {
+    const el = chipEls.get(it.id);
+    if (!el) continue;
+    const k = keyOf(it.sets);
+    const isF = !!F && F.type === 'item' && F.id === it.id;
+    const lit = !F || isF || (F.type === 'zone' && F.key === k) || (F.type === 'set' && it.sets.includes(F.id));
+    el.classList.toggle('dim', !lit);
+    el.classList.toggle('focus', isF);
+  }
+  for (const [k, el] of moreEls) {
+    const lit = !F || (F.type === 'zone' && F.key === k) || (F.type === 'set' && idsOf(k).includes(F.id));
+    el.classList.toggle('dim', !lit);
+  }
+  const fi = F && F.type === 'item' ? item(F.id) : null;
+  for (const [id, el] of labelEls) {
+    const lit = !F || (F.type === 'set' && F.id === id) || (F.type === 'zone' && idsOf(F.key).includes(id)) || (fi && fi.sets.includes(id));
+    el.firstChild.classList.toggle('dim', !lit);
+  }
+  addBtn.classList.toggle('hide', !!F || state.sets.length >= 3 || !!(drag && drag.active));
+  emptyHint.classList.toggle('show', !state.items.length && !ui.input && !ui.pop);
+  draw();
+}
+function updateHint() {
+  const dragging = drag && drag.active;
+  const k = !ui.pop && !ui.input && !dragging ? ui.hoverKey : null;
+  const ph = k && L.ph.get(k);
+  if (ph) {
+    const jump = !hintEl.classList.contains('show') || hintEl.dataset.key !== k;
+    if (jump) hintEl.classList.add('notrans');
+    hintEl.style.transform = `translate(${f2(ph.x - 13)}px,${f2(ph.y - 13)}px) scale(${ph.s})`;
+    hintEl.dataset.key = k;
+    if (jump) { hintEl.offsetWidth; hintEl.classList.remove('notrans'); }
+    hintEl.classList.add('show');
+  } else hintEl.classList.remove('show');
+
+  const tk = dragging ? drag.target : ui.input ? ui.input.key : ui.pop ? null : ui.hoverKey;
+  if (tk) tintKey = tk;
+  tint.classList.toggle('on', !!tk);
+  tint.classList.toggle('strong', !!dragging);
+  draw();
+}
+
+function layoutChips() {
+  computeLayout(); applyLayout(); applyFocus(); updateHint(); placePop();
+}
+function relayout(opts = {}) {
+  computeGeo();
+  setTargets(opts.instant, opts.initial);
+  renderLabels();
+  positionAddBtn();
+  layoutChips();
+}
+
+/* ---------- inline input ---------- */
+function openInput(key, x, y) {
+  if (ui.pop) closePop();
+  if (ui.input) commitInput();
+  x = clamp(x, 70, W - 70); y = clamp(y, 24, H - 24);
+  const wrap = document.createElement('div');
+  wrap.className = 'inputwrap';
+  wrap.style.left = x + 'px'; wrap.style.top = y + 'px';
+  const inp = document.createElement('input');
+  inp.placeholder = 'New thought'; inp.maxLength = 80; inp.spellcheck = false;
+  const size = () => { inp.style.width = clamp(textW(inp.value || inp.placeholder) + 32, 110, 260) + 'px'; };
+  size();
+  inp.addEventListener('input', size);
+  inp.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); commitInput(); } });
+  wrap.appendChild(inp);
+  floatL.appendChild(wrap);
+  const I = { key, x, y, el: wrap, inp };
+  ui.input = I;
+  inp.addEventListener('blur', () => { if (ui.input === I) commitInput(); });
+  inp.focus({ preventScroll: true });
+  applyFocus(); updateHint();
+}
+function dropInput(I) {
+  I.el.classList.add('out');
+  setTimeout(() => I.el.remove(), 160);
+}
+function commitInput() {
+  const I = ui.input;
+  if (!I) return;
+  ui.input = null;
+  const v = I.inp.value.trim();
+  dropInput(I);
+  if (v && zoneMap.has(I.key)) {
+    const it = { id: uid(), title: v, description: '', sets: idsOf(I.key) };
+    state.items.push(it);
+    spawn.set(it.id, { x: I.x - chipW(v) / 2, y: I.y - CH / 2 });
+    layoutChips(); save();
+  } else { applyFocus(); updateHint(); }
+}
+function cancelInput() {
+  const I = ui.input;
+  if (!I) return;
+  ui.input = null;
+  dropInput(I);
+  applyFocus(); updateHint();
+}
+
+/* ---------- popovers ---------- */
+function popShell(ids, caption) {
+  const el = document.createElement('div');
+  el.className = 'pop';
+  const cap = document.createElement('div');
+  cap.className = 'cap';
+  const dots = document.createElement('span');
+  dots.className = 'dots';
+  for (const id of orderIds(ids)) {
+    const d = document.createElement('span');
+    d.className = 'dot';
+    d.style.background = PALETTE[setById(id).color].ink;
+    dots.appendChild(d);
+  }
+  const ct = document.createElement('span');
+  ct.className = 'ct'; ct.textContent = caption;
+  cap.append(dots, ct);
+  el.appendChild(cap);
+  return el;
+}
+function autosize(ta) { ta.style.height = 'auto'; ta.style.height = Math.min(ta.scrollHeight, 240) + 'px'; }
+function makeTextarea(value, placeholder, onInput) {
+  const ta = document.createElement('textarea');
+  ta.rows = 1; ta.value = value; ta.placeholder = placeholder;
+  ta.addEventListener('input', () => { onInput(ta.value); autosize(ta); placePop(); save(); });
+  ta.addEventListener('keydown', e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); closePop(); } });
+  return ta;
+}
+function finalizePop() {
+  if (ui.renaming) {
+    const s = setById(ui.renaming);
+    if (s) s.name = s.name.trim() || ui.renameOrig;
+    ui.renaming = null;
+    renderLabels();
+  }
+  save();
+}
+function showPop(spec, el, focusEl) {
+  if (ui.input) commitInput();
+  if (ui.pop) finalizePop();
+  if (popEl) { const old = popEl; old.classList.remove('in'); old.style.pointerEvents = 'none'; setTimeout(() => old.remove(), 200); }
+  ui.pop = spec; popEl = el;
+  floatL.appendChild(el);
+  el.querySelectorAll('textarea').forEach(autosize);
+  placePop();
+  requestAnimationFrame(() => el.classList.add('in'));
+  applyFocus(); updateHint();
+  if (focusEl) focusEl.focus({ preventScroll: true });
+}
+function closePop() {
+  if (!ui.pop) return;
+  finalizePop();
+  ui.pop = null;
+  if (popEl) { const old = popEl; popEl = null; old.classList.remove('in'); old.style.pointerEvents = 'none'; setTimeout(() => old.remove(), 200); }
+  if (document.activeElement && document.activeElement !== document.body) document.activeElement.blur();
+  applyFocus(); updateHint();
+}
+function placePop() {
+  const p = ui.pop, el = popEl;
+  if (!p || !el) return;
+  if (p.kind === 'item') { const r = chipRect(p.id); if (r) p.anchor = r; }
+  if (p.kind === 'set') { const lab = labelEls.get(p.id); if (lab) { const r = lab.firstChild.getBoundingClientRect(); p.anchor = { x: r.left, y: r.top, w: r.width, h: r.height }; } }
+  const a = p.anchor, pw = el.offsetWidth, ph = el.offsetHeight, M = 12, G = 12;
+  const order = p.prefer === 'left' ? ['left', 'right', 'below', 'above'] : ['right', 'left', 'below', 'above'];
+  let pos = null;
+  for (const side of order) {
+    let x, y;
+    if (side === 'right' || side === 'left') {
+      x = side === 'right' ? a.x + a.w + G : a.x - G - pw;
+      y = clamp(a.y + a.h / 2 - Math.min(ph / 2, 30), M, H - M - ph);
+      if (x < M || x + pw > W - M) continue;
+    } else {
+      x = clamp(a.x + a.w / 2 - pw / 2, M, W - M - pw);
+      y = side === 'below' ? a.y + a.h + G : a.y - G - ph;
+      if (y < M || y + ph > H - M) continue;
+    }
+    pos = { x, y }; break;
+  }
+  if (!pos) pos = { x: clamp(a.x, M, W - M - pw), y: clamp(a.y + a.h + G, M, H - M - ph) };
+  el.style.left = pos.x + 'px'; el.style.top = pos.y + 'px';
+}
+const elRect = el => { const r = el.getBoundingClientRect(); return { x: r.left, y: r.top, w: r.width, h: r.height }; };
+
+function openItemPop(id, anchorEl) {
+  const it = item(id);
+  if (!it) return;
+  const el = popShell(it.sets, zoneName(it.sets));
+  const orig = it.title;
+  const ttl = document.createElement('input');
+  ttl.className = 'ttl'; ttl.value = it.title; ttl.maxLength = 80; ttl.spellcheck = false;
+  ttl.addEventListener('input', () => { it.title = ttl.value.trim() || orig; layoutChips(); save(); });
+  ttl.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); closePop(); } });
+  const ta = makeTextarea(it.description, 'Add a description…', v => { it.description = v; });
+  el.append(ttl, ta);
+  showPop({ kind: 'item', id, anchor: chipRect(id) || elRect(anchorEl) }, el, ta);
+}
+function openSetPop(id) {
+  const s = setById(id);
+  if (!s) return;
+  const el = popShell([id], 'About this idea');
+  const ta = makeTextarea(s.description, `What is ${s.name.trim() || 'this idea'} about?`, v => { s.description = v; });
+  el.appendChild(ta);
+  const lab = labelEls.get(id);
+  showPop({ kind: 'set', id, anchor: elRect(lab.firstChild), prefer: geo[id].x < center.x - 1 ? 'left' : 'right' }, el, null);
+  ui.renaming = id; ui.renameOrig = s.name;
+  renderLabels();
+  const inp = lab.querySelector('input');
+  inp.focus({ preventScroll: true }); inp.select();
+  placePop();
+}
+function openZonePop(key, x, y) {
+  const ids = idsOf(key);
+  const el = popShell(ids, zoneName(ids));
+  const ph = ids.length === 3 ? 'What do all three share?' : 'What do these share?';
+  const ta = makeTextarea(state.zones[key] || '', ph, v => { if (v.trim()) state.zones[key] = v; else delete state.zones[key]; });
+  el.appendChild(ta);
+  showPop({ kind: 'zone', key, anchor: { x, y, w: 0, h: 0 } }, el, ta);
+}
+function openMore(key) {
+  const m = moreEls.get(key);
+  if (!m) return;
+  const ids = idsOf(key);
+  const el = popShell(ids, zoneName(ids));
+  const list = document.createElement('div');
+  list.className = 'list';
+  for (const it of state.items) if (keyOf(it.sets) === key) {
+    const c = document.createElement('div');
+    c.className = 'pchip'; c.dataset.id = it.id;
+    const sp = document.createElement('span'); sp.textContent = it.title;
+    c.appendChild(sp); list.appendChild(c);
+  }
+  list.addEventListener('pointerdown', e => {
+    const c = e.target.closest('.pchip');
+    if (c) beginPress(e, { id: c.dataset.id, el: c, fromPanel: true });
+  });
+  el.appendChild(list);
+  showPop({ kind: 'more', key, anchor: elRect(m) }, el, null);
+}
+
+/* ---------- circles: add / remove ---------- */
+function addSet() {
+  if (state.sets.length >= 3) return;
+  const used = new Set(state.sets.map(s => s.color));
+  const color = [0, 1, 2].find(i => !used.has(i));
+  const names = new Set(state.sets.map(s => s.name.trim()));
+  const ch = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('').find(c => !names.has('Idea ' + c));
+  state.sets.push({ id: uid(), name: 'Idea ' + ch, description: '', color });
+  relayout(); save();
+}
+function removeSet(id) {
+  if (state.sets.length <= 1) return;
+  if (ui.pop) closePop();
+  if (ui.input) cancelInput();
+  state.sets = state.sets.filter(s => s.id !== id);
+  state.items = state.items.filter(it => { it.sets = it.sets.filter(x => x !== id); return it.sets.length; });
+  for (const k of Object.keys(state.zones)) if (idsOf(k).includes(id)) delete state.zones[k];
+  const lab = labelEls.get(id);
+  if (lab) lab.classList.add('leaving');
+  ui.hoverKey = null;
+  relayout(); save();
+}
+
+/* ---------- press / drag ---------- */
+function beginPress(e, info) {
+  if (e.button !== 0) return;
+  e.preventDefault();
+  press = { ...info, sx: e.clientX, sy: e.clientY };
+  window.addEventListener('pointermove', onPressMove);
+  window.addEventListener('pointerup', onPressUp);
+  window.addEventListener('pointercancel', onPressUp);
+}
+function onPressMove(e) {
+  if (!press) return;
+  if (!drag) {
+    if (!press.id || Math.hypot(e.clientX - press.sx, e.clientY - press.sy) < 4) return;
+    startDrag();
+  }
+  moveDrag(e.clientX, e.clientY);
+}
+function onPressUp() {
+  window.removeEventListener('pointermove', onPressMove);
+  window.removeEventListener('pointerup', onPressUp);
+  window.removeEventListener('pointercancel', onPressUp);
+  const p = press;
+  press = null;
+  if (drag) { finishDrag(); return; }
+  if (!p) return;
+  if (p.more) {
+    if (ui.pop && ui.pop.kind === 'more' && ui.pop.key === p.more) closePop(); else openMore(p.more);
+  } else if (!p.fromPanel && ui.pop && ui.pop.kind === 'item' && ui.pop.id === p.id) {
+    closePop();
+  } else openItemPop(p.id, p.el);
+}
+function startDrag() {
+  const it = item(press.id), el = chipEls.get(press.id);
+  if (!it || !el) { press = null; return; }
+  if (ui.pop) closePop();
+  if (ui.input) commitInput();
+  const r = press.el.getBoundingClientRect();
+  const k = keyOf(it.sets);
+  drag = {
+    id: it.id, el, active: true, w: L.w.get(it.id),
+    fx: clamp((press.sx - r.left) / r.width, 0, 1), fy: clamp((press.sy - r.top) / r.height, 0, 1),
+    startKey: k, target: k,
+  };
+  el.classList.add('dragging');
+  el.classList.remove('collapsed', 'dim', 'focus');
+  stage.classList.add('dragging');
+  layoutChips();
+}
+function moveDrag(x, y) {
+  const d = drag;
+  d.el.style.transform = xf(x - d.fx * d.w, y - d.fy * CH, 1);
+  const Z = hitTest(x, y), t = Z ? Z.key : null;
+  d.el.classList.toggle('doomed', !t);
+  if (t !== d.target) { d.target = t; layoutChips(); }
+}
+function finishDrag(cancel) {
+  const d = drag;
+  drag = null;
+  stage.classList.remove('dragging');
+  d.el.classList.remove('dragging', 'doomed');
+  const it = item(d.id);
+  const target = cancel ? d.startKey : d.target;
+  if (!target) {
+    state.items = state.items.filter(i => i !== it);
+  } else if (target !== d.startKey) {
+    it.sets = idsOf(target);
+    state.items = state.items.filter(i => i !== it);
+    state.items.push(it);
+  }
+  d.el.offsetWidth;   // re-enable transition before gliding into the slot
+  layoutChips(); save();
+}
+
+/* ---------- events ---------- */
+chipsL.addEventListener('pointerdown', e => {
+  const el = e.target.closest('.chip-pos');
+  if (!el || el.classList.contains('leaving')) return;
+  beginPress(e, el.dataset.more ? { more: el.dataset.more, el } : { id: el.dataset.id, el });
+});
+
+let swallow = false;
+window.addEventListener('pointerdown', e => {
+  swallow = false;
+  const t = e.target;
+  const keep = t.closest('.pop') || t.closest('.chip-pos') || (ui.renaming && t.closest('.label input'));
+  if (ui.pop && !keep) {
+    // Clicking another label opens its own popover; anything else just dismisses.
+    if (!t.closest('.label .name')) swallow = true;
+    closePop();
+  }
+  if (ui.input && !t.closest('.inputwrap')) { commitInput(); swallow = true; }
+}, true);
+
+stage.addEventListener('click', e => {
+  if (swallow) { swallow = false; return; }
+  if (drag || e.target.closest('.chip-pos, .label, .pop, .hint, .addc, .inputwrap')) return;
+  const Z = hitTest(e.clientX, e.clientY);
+  if (!Z) return;
+  if (Z.ids.length === 1) openInput(Z.key, e.clientX, e.clientY);
+  else openZonePop(Z.key, e.clientX, e.clientY);
+});
+
+labelsL.addEventListener('click', e => {
+  const lab = e.target.closest('.label');
+  if (!lab || lab.classList.contains('leaving')) return;
+  const id = lab.dataset.id;
+  if (e.target.closest('.lx')) { removeSet(id); return; }
+  if (e.target.closest('.name') && ui.renaming !== id) openSetPop(id);
+});
+
+hintEl.addEventListener('click', () => {
+  const k = hintEl.dataset.key, ph = L.ph.get(k);
+  if (ph) openInput(k, ph.x, ph.y);
+});
+addBtn.addEventListener('click', addSet);
+
+let lastTarget = null, mouse = { x: -1e4, y: -1e4 }, hoverRaf = 0;
+stage.addEventListener('pointermove', e => {
+  mouse.x = e.clientX; mouse.y = e.clientY; lastTarget = e.target;
+  if (!hoverRaf) hoverRaf = requestAnimationFrame(onHover);
+});
+document.addEventListener('pointerleave', () => { mouse.x = mouse.y = -1e4; lastTarget = null; onHover(); });
+function onHover() {
+  hoverRaf = 0;
+  if (drag) return;
+  const overUI = lastTarget && lastTarget.closest && lastTarget.closest('.pop, .label, .addc, .inputwrap');
+  const sets = overUI ? [] : setsAt(mouse.x, mouse.y);
+  const key = sets.length ? keyOf(sets) : null;
+  ui.hoverSets = sets;
+  for (const [id, el] of labelEls) el.classList.toggle('hover', sets.includes(id));
+  stage.classList.toggle('in-zone', !!key && !ui.pop && !ui.input);
+  if (key !== ui.hoverKey) { ui.hoverKey = key; updateHint(); }
+}
+
+window.addEventListener('keydown', e => {
+  if (e.key !== 'Escape') return;
+  if (drag) { window.removeEventListener('pointermove', onPressMove); press = null; finishDrag(true); }
+  else if (ui.input) cancelInput();
+  else if (ui.pop) closePop();
+});
+
+let resizeT;
+window.addEventListener('resize', () => {
+  stage.classList.add('instant');
+  relayout({ instant: true });
+  clearTimeout(resizeT);
+  resizeT = setTimeout(() => stage.classList.remove('instant'), 150);
+});
+
+relayout({ initial: true });
+if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => { wcache = new Map(); layoutChips(); });
+})();
+</script>
+</body>
+</html>
