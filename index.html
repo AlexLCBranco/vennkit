@@ -444,6 +444,38 @@
   .pchip.lift { opacity: .3; }
   .up-ghost { position: absolute; left: 0; top: 0; z-index: 50; pointer-events: none; transition: none; box-shadow: 0 14px 30px rgba(0, 0, 0, .55), 0 2px 6px var(--shadow); }
 
+  /* UpSet guide: a plain-language "how to read this" card */
+  .guide-btn {
+    position: absolute; top: 16px; left: 16px; z-index: 26; display: none; align-items: center; gap: 7px;
+    height: 36px; padding: 0 14px 0 8px; border: none; border-radius: 999px; cursor: pointer;
+    background: var(--surface); color: var(--ink-2); font: 500 13px var(--font);
+    box-shadow: 0 0 0 1px var(--line), 0 2px 6px var(--shadow); transition: color .2s, background .2s;
+  }
+  .guide-btn .q { width: 22px; height: 22px; border-radius: 50%; display: grid; place-items: center; background: var(--sel); color: var(--bg); font-weight: 700; font-size: 13px; }
+  .guide-btn:hover, .guide-btn.on { background: var(--surface-hi); color: var(--ink); }
+  #stage.v-upset .guide-btn { display: inline-flex; }
+  .guide {
+    position: absolute; top: 60px; left: 16px; z-index: 27; width: 360px; max-width: calc(100vw - 32px);
+    max-height: calc(100% - 140px); overflow: auto; padding: 16px 18px 14px; border-radius: 14px;
+    background: var(--surface); border: 1px solid var(--line);
+    box-shadow: 0 16px 44px rgba(0, 0, 0, .5), 0 2px 8px var(--shadow);
+    font-size: 13px; line-height: 1.5; color: var(--ink-2);
+    opacity: 0; transform: translateY(-6px); pointer-events: none; transition: opacity .2s ease, transform .25s var(--ease);
+  }
+  .guide.show { opacity: 1; transform: none; pointer-events: auto; }
+  .guide h3 { margin: 0 0 4px; font: 600 16px var(--font); color: var(--ink); }
+  .guide p { margin: 0; }
+  .guide svg { display: block; width: 100%; height: auto; margin: 12px 0 6px; }
+  .guide ol { margin: 8px 0 0; padding: 0; list-style: none; counter-reset: g; }
+  .guide li { position: relative; padding-left: 30px; margin-top: 10px; counter-increment: g; }
+  .guide li::before {
+    content: counter(g); position: absolute; left: 0; top: 0; width: 20px; height: 20px; border-radius: 50%;
+    display: grid; place-items: center; background: var(--surface-hi); color: var(--ink); font: 600 11px/1 var(--font);
+  }
+  .guide b { color: var(--ink); font-weight: 600; }
+  .guide .tips { margin-top: 12px; padding-top: 10px; border-top: 1px solid var(--line); color: var(--muted); font-size: 12px; }
+  .guide .acts { display: flex; justify-content: flex-end; margin-top: 12px; }
+
   /* Import */
   .pop.imp { width: 340px; }
   .pop .paste {
@@ -511,8 +543,40 @@
   <div id="emptyHint" class="empty-hint">Click inside a circle to add a thought</div>
   <div id="vsw" class="vsw" role="group" aria-label="View"><span class="ind"></span><button type="button" data-v="venn">Venn</button><button type="button" data-v="table">Table</button><button type="button" data-v="upset">UpSet</button></div>
   <div id="toast" class="toast" role="status" aria-live="polite"></div>
+  <button id="guideBtn" class="guide-btn" type="button" aria-expanded="false" aria-controls="guide"><span class="q">?</span>How to read this</button>
+  <div id="guide" class="guide" role="dialog" aria-label="How to read the UpSet view">
+    <h3>How to read this</h3>
+    <p>It's a Venn diagram, laid out as columns. Each column is one spot where your circles would overlap.</p>
+    <svg viewBox="0 0 320 132" aria-hidden="true">
+      <g font-family="Inter, system-ui, sans-serif" font-size="11" font-weight="600">
+        <text x="66" y="83" text-anchor="end" fill="#f08a7e">Work</text>
+        <text x="66" y="107" text-anchor="end" fill="#6fa8f5">Fun</text>
+        <rect x="104" y="20" width="16" height="44" rx="4" fill="#8a8f9c"/>
+        <text x="112" y="14" text-anchor="middle" fill="#c9ccd4">5</text>
+        <rect x="164" y="38" width="16" height="26" rx="4" fill="#8a8f9c"/>
+        <text x="172" y="32" text-anchor="middle" fill="#c9ccd4">3</text>
+        <rect x="224" y="50" width="16" height="14" rx="4" fill="#8a8f9c"/>
+        <text x="232" y="44" text-anchor="middle" fill="#c9ccd4">2</text>
+        <circle cx="112" cy="79" r="6" fill="#f08a7e"/><circle cx="112" cy="103" r="6" fill="#3a3d45"/>
+        <circle cx="172" cy="79" r="6" fill="#3a3d45"/><circle cx="172" cy="103" r="6" fill="#6fa8f5"/>
+        <line x1="232" y1="79" x2="232" y2="103" stroke="#8a8f9c" stroke-width="2"/>
+        <circle cx="232" cy="79" r="6" fill="#f08a7e"/><circle cx="232" cy="103" r="6" fill="#6fa8f5"/>
+        <g font-weight="500" font-size="10" fill="#8a8f9c" text-anchor="middle">
+          <text x="112" y="126">only Work</text><text x="172" y="126">only Fun</text><text x="232" y="126">Work + Fun</text>
+        </g>
+      </g>
+    </svg>
+    <ol>
+      <li><b>Dots say which groups.</b> A coloured dot means "in this group", a grey one means "not". Dots joined by a line mean "in all of these at once".</li>
+      <li><b>The bar says how many.</b> Taller bar, more thoughts in that exact mix. The biggest ones come first.</li>
+      <li><b>The thoughts are listed underneath</b> each column, so you can see exactly what's in it.</li>
+      <li><b>The number next to a group name</b> on the left is that group's total, counting every column it shows up in.</li>
+    </ol>
+    <p class="tips">Click a column to see all its thoughts. Drag a thought onto another column to change which groups it's in.</p>
+    <div class="acts"><button id="guideOk" class="btn pri" type="button">Got it</button></div>
+  </div>
 </div>
-<div class="version">v0.0.11</div>
+<div class="version">v0.0.12</div>
 
 <script>
 (() => {
@@ -1759,9 +1823,28 @@ function setView(v, note) {
   try { localStorage.setItem(VIEW_STORE, v); } catch {}
   vennEl.classList.toggle('off', v !== 'venn');
   altEl.classList.toggle('off', v === 'venn');
+  syncGuide();
   relayout();
   if (note) toast(note);
 }
+/* UpSet guide: opens by itself the first time someone sees UpSet, then stays behind its button. */
+const GUIDE_STORE = 'vennkit:upsetGuideSeen';
+const guideBtn = $('#guideBtn'), guideEl = $('#guide');
+function showGuide(on) {
+  guideEl.classList.toggle('show', on);
+  guideBtn.classList.toggle('on', on);
+  guideBtn.setAttribute('aria-expanded', String(on));
+  if (!on) try { localStorage.setItem(GUIDE_STORE, '1'); } catch {}
+}
+function syncGuide() {
+  stage.classList.toggle('v-upset', view === 'upset');
+  if (view !== 'upset') { showGuide(false); return; }
+  let seen = false;
+  try { seen = !!localStorage.getItem(GUIDE_STORE); } catch {}
+  if (!seen) showGuide(true);
+}
+guideBtn.addEventListener('click', () => showGuide(!guideEl.classList.contains('show')));
+$('#guideOk').addEventListener('click', () => showGuide(false));
 function renderSwitch() {
   vsw.dataset.v = view;
   for (const b of vsw.querySelectorAll('button')) b.classList.toggle('on', b.dataset.v === view);
@@ -2407,6 +2490,7 @@ window.addEventListener('resize', () => {
 applyFont(); applySize(); applyColors();
 vennEl.classList.toggle('off', view !== 'venn');
 altEl.classList.toggle('off', view === 'venn');
+syncGuide();
 relayout({ initial: true });
 loadFaces();
 })();
