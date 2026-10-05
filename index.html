@@ -299,6 +299,184 @@
   }
   .empty-hint.show { opacity: 1; }
 
+  /* Views: Venn / Table / UpSet all read the same state */
+  .view { position: absolute; inset: 0; transition: opacity .35s ease, transform .5s var(--ease), visibility 0s; }
+  .view.off {
+    opacity: 0; transform: scale(.985); visibility: hidden; pointer-events: none;
+    transition: opacity .25s ease, transform .4s var(--ease), visibility 0s linear .25s;
+  }
+  #alt { z-index: 0; pointer-events: none; }
+  .pane { animation: paneIn .45s var(--ease) both; }
+  @keyframes paneIn { from { opacity: 0; transform: translateY(10px); } }
+  .aa.imp { right: 148px; }
+
+  .vsw {
+    position: absolute; left: 16px; bottom: 16px; z-index: 22;
+    display: grid; grid-template-columns: repeat(3, 1fr); gap: 2px; padding: 3px; border-radius: 12px;
+    background: var(--surface); box-shadow: 0 0 0 1px var(--line), 0 2px 6px var(--shadow), 0 8px 22px rgba(0, 0, 0, .25);
+  }
+  .vsw .ind {
+    position: absolute; left: 3px; top: 3px; bottom: 3px; width: calc((100% - 10px) / 3); border-radius: 9px;
+    background: var(--surface-hi); box-shadow: inset 0 0 0 1px var(--line-2);
+    transition: transform .4s var(--ease);
+  }
+  .vsw[data-v="table"] .ind { transform: translateX(calc(100% + 2px)); }
+  .vsw[data-v="upset"] .ind { transform: translateX(calc(200% + 4px)); }
+  .vsw button {
+    position: relative; height: 30px; padding: 0 13px; border: none; border-radius: 9px; cursor: pointer;
+    background: transparent; color: var(--muted); font: 500 13px var(--font); transition: color .2s;
+  }
+  .vsw button:hover { color: var(--ink-2); }
+  .vsw button.on { color: var(--ink); }
+  .vsw button.na { color: var(--faint); cursor: default; }
+  .vsw button[data-tip]:hover::after {
+    content: attr(data-tip); position: absolute; left: 0; bottom: calc(100% + 10px);
+    padding: 7px 10px; border-radius: 9px; white-space: nowrap;
+    background: var(--surface-hi); color: var(--ink-2); font-size: 12px; font-weight: 500;
+    box-shadow: 0 0 0 1px var(--line), 0 8px 22px var(--shadow);
+    animation: popIn .2s var(--ease) both;
+  }
+  .toast {
+    position: absolute; left: 50%; bottom: 66px; z-index: 40; max-width: calc(100vw - 32px);
+    padding: 9px 14px; border-radius: 12px; pointer-events: none;
+    background: var(--surface-hi); color: var(--ink-2); font-size: 13px;
+    box-shadow: 0 0 0 1px var(--line), 0 10px 28px var(--shadow);
+    opacity: 0; transform: translate(-50%, 8px); transition: opacity .25s ease, transform .35s var(--ease);
+  }
+  .toast.show { opacity: 1; transform: translate(-50%, 0); }
+
+  /* Table view */
+  .tbl-wrap, .up-wrap { position: absolute; left: 16px; right: 16px; top: 68px; bottom: 64px; overflow: auto; pointer-events: auto; }
+  .tbl { margin: 0 auto; border-collapse: separate; border-spacing: 0; font: 500 calc(13px * var(--k)) var(--font); color: var(--ink); --r: 14px; }
+  .tbl th, .tbl td { padding: 0; background: var(--surface); border-bottom: 1px solid var(--line); transition: background .2s; }
+  .tbl tr > :first-child { border-left: 1px solid var(--line); }
+  .tbl tr > :last-child { border-right: 1px solid var(--line); }
+  .tbl thead th { position: sticky; top: 0; z-index: 2; height: calc(48px * var(--k)); border-top: 1px solid var(--line); }
+  .tbl thead th:first-child { left: 0; z-index: 3; border-top-left-radius: var(--r); }
+  .tbl thead th:last-child { border-top-right-radius: var(--r); }
+  .tbl tbody tr:last-child > :first-child { border-bottom-left-radius: var(--r); }
+  .tbl tbody tr:last-child > :last-child { border-bottom-right-radius: var(--r); }
+  .tbl .rh { position: sticky; left: 0; z-index: 1; min-width: 170px; padding: 6px 36px 6px 10px; text-align: left; }
+  .tbl .rh .pchip { display: inline-flex; max-width: 240px; }
+  .tbl tbody tr[data-row]:hover > * { background: color-mix(in srgb, var(--surface), #fff 3%); }
+  .tbl tr.on > *, .tbl .col-on { background: color-mix(in srgb, var(--surface), var(--sel) 10%) !important; }
+  .tbl .sh { padding: 0 28px; text-align: center; }
+  .tbl .sh .nm {
+    display: inline-block; max-width: 150px; vertical-align: middle; padding: 5px 9px; border-radius: 9px;
+    font-weight: 600; color: var(--sc-ink); cursor: text; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    transition: background .2s;
+  }
+  .tbl .sh .nm:hover { background: rgba(255, 255, 255, .08); }
+  .tbl .lx { left: auto; right: 6px; margin: -10px 0 0; }
+  .tbl th:hover > .lx { opacity: 1; transform: none; pointer-events: auto; }
+  .tbl td.cell { min-width: calc(68px * var(--k)); height: calc(42px * var(--k)); text-align: center; cursor: pointer; }
+  .ck {
+    display: inline-grid; place-items: center; vertical-align: middle;
+    width: calc(24px * var(--k)); height: calc(24px * var(--k)); border-radius: 50%;
+    color: transparent; box-shadow: inset 0 0 0 1.5px transparent;
+    transition: background .15s, box-shadow .15s, color .15s, transform .25s var(--ease);
+  }
+  .cell:hover .ck { box-shadow: inset 0 0 0 1.5px var(--line-2); color: var(--faint); }
+  .cell.on .ck { background: var(--sc-fill); box-shadow: inset 0 0 0 1.5px var(--sc-stroke); color: var(--sc-ink); }
+  .cell.on:hover .ck { transform: scale(1.1); }
+  .cell.bump .ck { animation: ckIn .35s var(--ease); }
+  @keyframes ckIn { from { transform: scale(.55); } }
+  .tbl input.ren {
+    height: var(--chip-h); padding: 0 12px; border: none; outline: none; border-radius: 999px;
+    background: var(--surface-hi); color: var(--ink); font: 500 calc(13px * var(--k)) var(--font);
+    box-shadow: 0 0 0 2px color-mix(in srgb, var(--sel) 70%, transparent);
+  }
+  .tbl input.ren::placeholder { color: var(--faint); }
+  .tbl .sh input.ren { color: var(--sc-ink); font-weight: 600; text-align: center; }
+  .tbl .addcol { padding: 0 14px; }
+  .tplus {
+    width: 28px; height: 28px; padding: 0; border-radius: 50%; cursor: pointer; vertical-align: middle;
+    border: 1.5px dashed rgba(255, 255, 255, .3); background: rgba(255, 255, 255, .05); color: rgba(255, 255, 255, .55);
+    display: inline-grid; place-items: center; transition: background .2s, color .2s, border-color .2s;
+  }
+  .tplus:hover { background: var(--surface-hi); color: var(--ink); border-style: solid; border-color: var(--line-2); }
+  .tplus.na { opacity: .35; cursor: default; }
+  .tadd {
+    height: var(--chip-h); padding: 0 12px 0 9px; border-radius: 999px; cursor: pointer;
+    display: inline-flex; align-items: center; gap: 6px;
+    border: 1.5px dashed rgba(255, 255, 255, .22); background: transparent; color: var(--muted);
+    font: 500 calc(13px * var(--k)) var(--font); transition: background .2s, color .2s, border-color .2s;
+  }
+  .tadd:hover { background: rgba(255, 255, 255, .05); color: var(--ink); border-color: var(--line-2); }
+
+  /* UpSet view */
+  .up { position: relative; margin: 0 auto; }
+  .up > div > * { position: absolute; }
+  .up-stripe { left: 0; border-radius: 8px; background: rgba(255, 255, 255, .03); }
+  .up-set {
+    left: 0; display: flex; align-items: center; justify-content: flex-end; gap: 8px; padding-right: 14px;
+    font: 600 calc(13px * var(--k)) var(--font); white-space: nowrap;
+  }
+  .up-set .nm { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+  .up-set .ct { flex: none; min-width: 24px; padding: 2px 7px; border-radius: 999px; text-align: center; background: rgba(255, 255, 255, .06); color: var(--muted); font: 600 11px var(--font); }
+  .up-cap { left: 0; padding-right: 14px; text-align: right; font-size: 11px; font-weight: 600; line-height: 1.4; letter-spacing: .05em; text-transform: uppercase; color: var(--faint); }
+  .up-empty { font-size: 14px; line-height: 1.5; color: var(--faint); }
+  .up-col { position: absolute; left: 0; top: 0; cursor: pointer; transition: transform .55s var(--ease), opacity .3s ease; }
+  .up-col.enter { animation: colIn .45s var(--ease) both; }
+  @keyframes colIn { from { opacity: 0; } }
+  .up-col.gone { opacity: 0; pointer-events: none; }
+  .up-col.dim { opacity: .35; }
+  .up-col::before { content: ""; position: absolute; inset: 0 3px; border-radius: 12px; transition: background .2s, box-shadow .2s; }
+  .up-col:hover::before { background: rgba(255, 255, 255, .035); }
+  .up-col.on::before { background: color-mix(in srgb, var(--sel) 9%, transparent); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--sel) 35%, transparent); }
+  .up-col.drop::before { background: color-mix(in srgb, var(--sel) 16%, transparent); box-shadow: inset 0 0 0 1.5px var(--sel); }
+  .up-n { position: absolute; left: 0; right: 0; text-align: center; font: 600 calc(12px * var(--k)) var(--font); color: var(--ink-2); transition: top .55s var(--ease); }
+  .up-bar {
+    position: absolute; left: 50%; width: calc(22px * var(--k)); transform: translateX(-50%); border-radius: 6px 6px 2px 2px;
+    background: color-mix(in srgb, var(--ink) 38%, var(--bg)); transition: top .55s var(--ease), height .55s var(--ease), background .2s;
+  }
+  .up-col:hover .up-bar, .up-col.on .up-bar { background: color-mix(in srgb, var(--ink) 70%, var(--bg)); }
+  .up-dots { position: absolute; left: 0; right: 0; }
+  .up-dot { position: absolute; left: 50%; width: 12px; height: 12px; margin: -6px 0 0 -6px; border-radius: 50%; background: rgba(255, 255, 255, .09); }
+  .up-dot.in { background: var(--dc); box-shadow: 0 0 0 3px color-mix(in srgb, var(--dc) 20%, transparent); }
+  .up-line { position: absolute; left: 50%; width: 2px; margin-left: -1px; border-radius: 1px; background: color-mix(in srgb, var(--ink) 45%, var(--bg)); }
+  .up-items { position: absolute; left: 6px; right: 6px; display: flex; flex-direction: column; gap: 4px; }
+  .up-items .pchip { height: var(--pill); padding: 0 8px; font-size: calc(12px * var(--k)); }
+  .up-items .pchip:hover { transform: translateY(-1px); background: var(--surface-hi); }
+  .up-items .pchip.more { background: rgba(255, 255, 255, .04); color: var(--muted); border-style: dashed; border-color: var(--line-2); box-shadow: none; }
+  .up-col.on .up-items .pchip:not(.more) { border-color: color-mix(in srgb, var(--sel) 55%, transparent); }
+  .pchip.on { box-shadow: 0 0 0 2px var(--bg), 0 0 0 3.5px var(--sel); }
+  .pchip.lift { opacity: .3; }
+  .up-ghost { position: absolute; left: 0; top: 0; z-index: 50; pointer-events: none; transition: none; box-shadow: 0 14px 30px rgba(0, 0, 0, .55), 0 2px 6px var(--shadow); }
+
+  /* Import */
+  .pop.imp { width: 340px; }
+  .pop .paste {
+    display: block; width: 100%; min-height: 84px; max-height: 160px; padding: 10px 12px; border-radius: 10px;
+    border: 1px dashed var(--line-2); background: rgba(255, 255, 255, .03);
+    font: 400 13px/1.45 var(--font); color: var(--ink-2);
+  }
+  .pop .paste:focus { border-style: solid; border-color: color-mix(in srgb, var(--sel) 60%, transparent); }
+  .pop .or { margin: 8px 0; text-align: center; font-size: 12px; color: var(--faint); }
+  .pop .help, .pop .note { margin-top: 10px; font-size: 12px; line-height: 1.45; color: var(--muted); }
+  .pop .err { margin-top: 10px; font-size: 12px; line-height: 1.45; color: var(--danger); }
+  .pop .acts { display: flex; justify-content: flex-end; gap: 8px; margin-top: 14px; }
+  .btn {
+    height: 32px; padding: 0 14px; border-radius: 9px; cursor: pointer;
+    border: 1px solid var(--line-2); background: rgba(255, 255, 255, .04); color: var(--ink-2); font: 500 13px var(--font);
+    transition: background .15s, color .15s;
+  }
+  .btn:hover { background: rgba(255, 255, 255, .08); color: var(--ink); }
+  .btn.pri { border-color: transparent; background: var(--ink); color: var(--bg); font-weight: 600; }
+  .btn.pri:hover { background: color-mix(in srgb, var(--ink) 86%, var(--bg)); }
+  .btn.wide { display: block; width: 100%; }
+  .prev-sum { margin-bottom: 10px; font: 600 15px var(--font); color: var(--ink); }
+  .prev-groups { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 12px; }
+  .pg { display: inline-flex; align-items: center; gap: 6px; max-width: 100%; height: 26px; padding: 0 10px; border-radius: 999px; background: rgba(255, 255, 255, .05); font: 600 12px var(--font); }
+  .pg .nm { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .pg small { color: var(--muted); font-weight: 500; }
+  .dot8 { width: 8px; height: 8px; border-radius: 50%; flex: none; }
+  .prev-items { display: flex; flex-direction: column; gap: 4px; }
+  .pi { display: flex; align-items: center; gap: 8px; min-height: 22px; font-size: 13px; color: var(--ink-2); }
+  .pi .t { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .pi .ds { display: flex; gap: 3px; flex: none; }
+  .pi .none, .pi.more { font-size: 12px; color: var(--faint); }
+
   /* Bumped by hand in every commit that ships a change (see CLAUDE.md), so the live site can be checked at a glance. */
   .version {
     position: fixed; right: 8px; bottom: 8px; padding: 2px 6px; border-radius: 4px;
@@ -310,16 +488,20 @@
 </head>
 <body>
 <div id="stage">
-  <svg id="svg" xmlns="http://www.w3.org/2000/svg">
-    <defs id="defs"></defs>
-    <g id="circles"></g>
-    <rect id="tint" x="0" y="0" width="100%" height="100%" mask="url(#mh)"></rect>
-    <rect id="dim" x="0" y="0" width="100%" height="100%" mask="url(#mf)"></rect>
-  </svg>
-  <div id="labels" class="layer"></div>
-  <div id="chips" class="layer"></div>
-  <button id="hint" class="hint" aria-label="Add a thought here"></button>
-  <button id="addCircle" class="addc" title="Add a circle" aria-label="Add a circle"></button>
+  <div id="venn" class="view">
+    <svg id="svg" xmlns="http://www.w3.org/2000/svg">
+      <defs id="defs"></defs>
+      <g id="circles"></g>
+      <rect id="tint" x="0" y="0" width="100%" height="100%" mask="url(#mh)"></rect>
+      <rect id="dim" x="0" y="0" width="100%" height="100%" mask="url(#mf)"></rect>
+    </svg>
+    <div id="labels" class="layer"></div>
+    <div id="chips" class="layer"></div>
+    <button id="hint" class="hint" aria-label="Add a thought here"></button>
+    <button id="addCircle" class="addc" title="Add a circle" aria-label="Add a circle"></button>
+  </div>
+  <div id="alt" class="view"></div>
+  <button id="importBtn" class="aa imp" title="Import from Excel" aria-label="Import from Excel"></button>
   <button id="fontBtn" class="aa" title="Colors and text" aria-label="Colors and text"></button>
   <button id="undoBtn" class="aa undo" title="Undo" aria-label="Undo" disabled></button>
   <button id="redoBtn" class="aa redo" title="Redo" aria-label="Redo" disabled></button>
@@ -327,15 +509,19 @@
   <div id="floating" class="layer"></div>
   <div id="marquee" class="marquee"></div>
   <div id="emptyHint" class="empty-hint">Click inside a circle to add a thought</div>
+  <div id="vsw" class="vsw" role="group" aria-label="View"><span class="ind"></span><button type="button" data-v="venn">Venn</button><button type="button" data-v="table">Table</button><button type="button" data-v="upset">UpSet</button></div>
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
 </div>
-<div class="version">v0.0.10</div>
+<div class="version">v0.0.11</div>
 
 <script>
 (() => {
 'use strict';
 
 /* ---------- constants ---------- */
-const STORE = 'vennkit:v1';
+const STORE = 'vennkit:v1', VIEW_STORE = 'vennkit:view';
+const MAXSETS = 8;
+const VENN_TIP = 'Venn works up to 3 groups — try UpSet';
 const FONTS = {
   sans: { name: 'Sans', css: 'Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif' },
   serif: { name: 'Serif', css: 'Fraunces, Georgia, "Times New Roman", serif' },
@@ -381,6 +567,8 @@ const ICON_X = '<svg width="9" height="9" viewBox="0 0 10 10"><path d="M2 2l6 6M
 const ICON_UNDO = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M9 14L4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H11"/></svg>';
 const ICON_TRASH = '<svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M2.5 4.5h11M6.5 4.5V3h3v1.5M4 4.5l.7 8.5h6.6l.7-8.5M6.8 7v3.8M9.2 7v3.8"/></svg>';
 const ICON_PALETTE = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"><path d="M12 3.2c-5 0-9 3.8-9 8.6 0 4.9 4 8.9 8.9 8.9 1.1 0 1.8-.7 1.8-1.6 0-.5-.2-.8-.5-1.2-.3-.3-.5-.7-.5-1.2 0-.9.8-1.6 1.7-1.6h2.1c2.9 0 5.3-2.3 5.3-5.2 0-4.2-4.3-6.7-9.8-6.7z"/><circle cx="7.6" cy="11.6" r="1.1" fill="currentColor" stroke="none"/><circle cx="10.2" cy="7.6" r="1.1" fill="currentColor" stroke="none"/><circle cx="14.8" cy="7.6" r="1.1" fill="currentColor" stroke="none"/><circle cx="17.4" cy="11.4" r="1.1" fill="currentColor" stroke="none"/></svg>';
+const ICON_CHECK = '<svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2.5 6.2l2.3 2.3 4.7-5"/></svg>';
+const ICON_IMPORT = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4v11M7.5 10.5L12 15l4.5-4.5"/><path d="M4 15v3.5A1.5 1.5 0 0 0 5.5 20h13a1.5 1.5 0 0 0 1.5-1.5V15"/></svg>';
 const $ = s => document.querySelector(s);
 const stage = $('#stage'), defs = $('#defs'), circlesG = $('#circles'), tint = $('#tint'), dim = $('#dim');
 const labelsL = $('#labels'), chipsL = $('#chips'), hintEl = $('#hint'), addBtn = $('#addCircle');
@@ -389,6 +577,9 @@ const undoBtn = $('#undoBtn'), redoBtn = $('#redoBtn');
 undoBtn.innerHTML = ICON_UNDO;
 redoBtn.innerHTML = ICON_UNDO.replace('<svg ', '<svg style="transform:scaleX(-1)" ');
 const selBar = $('#selBar'), marqEl = $('#marquee');
+const vennEl = $('#venn'), altEl = $('#alt'), vsw = $('#vsw'), vennBtn = vsw.querySelector('[data-v=venn]');
+const importBtn = $('#importBtn'), toastEl = $('#toast');
+importBtn.innerHTML = ICON_IMPORT;
 hintEl.innerHTML = ICON_PLUS;
 fontBtn.innerHTML = ICON_PALETTE;
 addBtn.innerHTML = ICON_PLUS.replace(/14/g, '18');
@@ -417,9 +608,9 @@ function load() {
     if (!s || !Array.isArray(s.sets) || !s.sets.length || !Array.isArray(s.items)) return defaultState();
     const okId = id => typeof id === 'string' && /^[a-z0-9]+$/i.test(id);
     const used = new Set();
-    s.sets = s.sets.filter(x => x && okId(x.id)).slice(0, 3).map(x => {
+    s.sets = s.sets.filter(x => x && okId(x.id)).slice(0, MAXSETS).map(x => {
       let color = typeof x.color === 'number' ? PRESETS[x.color] : x.color;
-      if (!okHex(color)) color = PRESETS.find(c => !used.has(c));
+      if (!okHex(color)) color = PRESETS.find(c => !used.has(c)) || PRESETS[0];
       color = color.toLowerCase();
       used.add(color);
       return { id: x.id, name: String(x.name || 'Idea'), description: String(x.description || ''), color };
@@ -432,7 +623,7 @@ function load() {
       style: i.style && typeof i.style === 'object'
         ? { color: okHex(i.style.color) ? i.style.color.toLowerCase() : null, b: !!i.style.b, i: !!i.style.i, s: !!i.style.s }
         : {},
-    })).filter(i => i.sets.length);
+    }));   // items in no group are kept: the Table shows them, the Venn can't
     s.font = FONTS[s.font] ? s.font : 'sans';
     s.size = SIZES[s.size] ? s.size : 'md';
     s.bg = okHex(s.bg) ? s.bg.toLowerCase() : BGS[0];
@@ -443,6 +634,8 @@ function load() {
   } catch { return defaultState(); }
 }
 let state = load();
+// Which view is showing is a per-browser preference, not data, so it stays out of undo.
+let view = (() => { try { const v = localStorage.getItem(VIEW_STORE); return ['venn', 'table', 'upset'].includes(v) ? v : 'venn'; } catch { return 'venn'; } })();
 let saveT;
 function save() {
   clearTimeout(saveT);
@@ -471,6 +664,7 @@ const undo = () => step(undoStack, redoStack);
 const redo = () => step(redoStack, undoStack);
 function step(from, to) {
   if (ui.input) cancelInput();
+  ui.newItem = false;
   if (ui.pop) closePop();
   checkpoint();
   if (!from.length) return;
@@ -854,7 +1048,7 @@ function renderLabels() {
     const inner = el.firstChild, nameEl = inner.querySelector('.name');
     inner.style.color = tone(s.color).ink;
     let inp = inner.querySelector('input');
-    const renaming = ui.renaming === s.id;
+    const renaming = ui.renaming === s.id && view === 'venn';
     if (renaming && !inp) {
       inp = document.createElement('input');
       inp.value = s.name; inp.spellcheck = false; inp.maxLength = 60;
@@ -891,13 +1085,14 @@ function hookRename(inp, s) {
 }
 
 /* ---------- UI state ---------- */
-const ui = { hoverKey: null, hoverSets: [], input: null, pop: null, renaming: null, renameOrig: '' };
+const ui = { hoverKey: null, hoverSets: [], input: null, pop: null, renaming: null, renItem: null, renameOrig: '', newItem: false };
 let popEl = null, drag = null, press = null;
 
 function positionAddBtn() {
   const n = state.sets.length;
   let x, y;
   if (n === 1) { x = Math.min(center.x + center.r + 46, W - 30); y = center.y; }
+  else if (n === 3) { x = Math.min(center.x + center.r * .95, W - 30); y = Math.min(center.y + center.r * 1.55, H - 30); }   // beside the bottom circle; a 4th group opens UpSet
   else { x = center.x; y = Math.min(center.y + center.r + 38, H - 30); }
   addBtn.style.left = x + 'px'; addBtn.style.top = y + 'px';
 }
@@ -910,7 +1105,7 @@ function focusInfo() {
     return L.pos.has(p.id) ? { type: 'item', id: p.id } : { type: 'zone', key: keyOf(it.sets) };
   }
   if (p.kind === 'set') return { type: 'set', id: p.id };
-  if (p.kind === 'font') return null;
+  if (p.kind === 'font' || p.kind === 'import') return null;
   return { type: 'zone', key: p.key };
 }
 function applyFocus() {
@@ -936,9 +1131,11 @@ function applyFocus() {
     const lit = !F || (F.type === 'set' && F.id === id) || (F.type === 'zone' && idsOf(F.key).includes(id)) || (fi && fi.sets.includes(id));
     el.firstChild.classList.toggle('dim', !lit);
   }
-  addBtn.classList.toggle('hide', !!F || state.sets.length >= 3 || !!(drag && drag.active));
+  addBtn.classList.toggle('hide', !!F || state.sets.length >= MAXSETS || !!(drag && drag.active));
   fontBtn.classList.toggle('on', !!(ui.pop && ui.pop.kind === 'font'));
-  emptyHint.classList.toggle('show', !state.items.length && !ui.input && !ui.pop);
+  importBtn.classList.toggle('on', !!(ui.pop && ui.pop.kind === 'import'));
+  emptyHint.classList.toggle('show', view === 'venn' && !state.items.length && !ui.input && !ui.pop);
+  if (view !== 'venn') altFocus();
   draw();
 }
 function updateHint() {
@@ -962,9 +1159,16 @@ function updateHint() {
 }
 
 function layoutChips() {
+  if (view !== 'venn') { renderView(); return; }
   computeLayout(); applyLayout(); applyFocus(); updateHint(); placePop(); renderSelBar();
 }
 function relayout(opts = {}) {
+  if (view === 'venn' && state.sets.length > 3) {
+    setView('upset', opts.initial ? null : 'Venn works up to 3 groups — switched to UpSet');
+    return;
+  }
+  if (view !== 'venn') { renderView(); return; }
+  renderSwitch();
   computeGeo();
   setTargets(opts.instant, opts.initial);
   renderLabels();
@@ -1052,7 +1256,13 @@ function finalizePop() {
     const s = setById(ui.renaming);
     if (s) s.name = s.name.trim() || ui.renameOrig;
     ui.renaming = null;
-    renderLabels();
+    if (view === 'venn') renderLabels(); else renderView();
+  }
+  if (ui.renItem) {
+    const it = item(ui.renItem);
+    if (it) it.title = it.title.trim() || ui.renameOrig;
+    ui.renItem = null;
+    renderView();
   }
   save();
 }
@@ -1079,11 +1289,16 @@ function closePop() {
 function placePop() {
   const p = ui.pop, el = popEl;
   if (!p || !el) return;
-  if (p.kind === 'item') { const r = chipRect(p.id); if (r) p.anchor = r; }
   if (p.kind === 'font') p.anchor = elRect(fontBtn);
-  if (p.kind === 'set') { const lab = labelEls.get(p.id); if (lab) { const r = lab.firstChild.getBoundingClientRect(); p.anchor = { x: r.left, y: r.top, w: r.width, h: r.height }; } }
+  else if (p.kind === 'import') p.anchor = elRect(importBtn);
+  else if (view !== 'venn') { const a = altAnchorEl(p); if (a) p.anchor = elRect(a); }
+  else {
+    if (p.kind === 'item') { const r = chipRect(p.id); if (r) p.anchor = r; }
+    if (p.kind === 'set') { const lab = labelEls.get(p.id); if (lab) { const r = lab.firstChild.getBoundingClientRect(); p.anchor = { x: r.left, y: r.top, w: r.width, h: r.height }; } }
+  }
   const a = p.anchor, pw = el.offsetWidth, ph = el.offsetHeight, M = 12, G = 12;
-  const order = p.prefer === 'left' ? ['left', 'right', 'below', 'above'] : ['right', 'left', 'below', 'above'];
+  const order = p.prefer === 'left' ? ['left', 'right', 'below', 'above']
+    : p.prefer === 'below' ? ['below', 'above', 'right', 'left'] : ['right', 'left', 'below', 'above'];
   let pos = null;
   for (const side of order) {
     let x, y;
@@ -1143,15 +1358,17 @@ function setSetColor(s, c) {
   s.color = c;
   const a = anim.get(s.id);
   if (a) a.color = c;
-  renderLabels(); draw();
+  if (view === 'venn') { renderLabels(); draw(); }
   if (popEl) popEl.querySelectorAll('.dot[data-id]').forEach(d => { const x = setById(d.dataset.id); if (x) d.style.background = tone(x.color).ink; });
+  if (view !== 'venn') renderView();
   save();
 }
 
-function openItemPop(id, anchorEl) {
+/* inline: the title is renamed in place (Table row), so the popover leaves out its own title field. */
+function openItemPop(id, anchorEl, inline) {
   const it = item(id);
   if (!it) return;
-  const el = popShell(it.sets, zoneName(it.sets));
+  const el = popShell(it.sets, zoneName(it.sets) || 'No group');
   const orig = it.title;
   const ttl = document.createElement('input');
   ttl.className = 'ttl'; ttl.value = it.title; ttl.maxLength = 80; ttl.spellcheck = false;
@@ -1170,8 +1387,17 @@ function openItemPop(id, anchorEl) {
     btns[k] = b; fmt.appendChild(b);
   }
   el.querySelector('.cap').appendChild(fmt);
-  el.append(ttl, ta, swatchRow(st.color || null, true, c => { st.color = c; layoutChips(); save(); }));
-  showPop({ kind: 'item', id, anchor: chipRect(id) || elRect(anchorEl) }, el, ta);
+  if (!inline) el.appendChild(ttl);
+  el.append(ta, swatchRow(st.color || null, true, c => { st.color = c; layoutChips(); save(); }));
+  const anchor = view === 'venn' ? chipRect(id) || elRect(anchorEl) : anchorEl ? elRect(anchorEl) : { x: 0, y: 0, w: 0, h: 0 };
+  showPop({ kind: 'item', id, anchor }, el, inline ? null : ta);
+  if (inline) {
+    ui.renItem = id; ui.renameOrig = it.title;
+    renderView();
+    const inp = altEl.querySelector('input.ren');
+    if (inp) { inp.focus({ preventScroll: true }); inp.select(); }
+    placePop();
+  }
 }
 function openSetPop(id) {
   const s = setById(id);
@@ -1179,12 +1405,20 @@ function openSetPop(id) {
   const el = popShell([id], 'About this idea');
   const ta = makeTextarea(s.description, `What is ${s.name.trim() || 'this idea'} about?`, v => { s.description = v; });
   el.append(ta, swatchRow(s.color, false, c => setSetColor(s, c)));
-  const lab = labelEls.get(id);
-  showPop({ kind: 'set', id, anchor: elRect(lab.firstChild), prefer: geo[id].x < center.x - 1 ? 'left' : 'right' }, el, null);
-  ui.renaming = id; ui.renameOrig = s.name;
-  renderLabels();
-  const inp = lab.querySelector('input');
-  inp.focus({ preventScroll: true }); inp.select();
+  let inp;
+  if (view === 'venn') {
+    const lab = labelEls.get(id);
+    showPop({ kind: 'set', id, anchor: elRect(lab.firstChild), prefer: geo[id].x < center.x - 1 ? 'left' : 'right' }, el, null);
+    ui.renaming = id; ui.renameOrig = s.name;
+    renderLabels();
+    inp = lab.querySelector('input');
+  } else {
+    showPop({ kind: 'set', id, anchor: { x: 0, y: 0, w: 0, h: 0 }, prefer: 'below' }, el, null);
+    ui.renaming = id; ui.renameOrig = s.name;
+    renderView();
+    inp = altEl.querySelector('input.ren');
+  }
+  if (inp) { inp.focus({ preventScroll: true }); inp.select(); }
   placePop();
 }
 function openZonePop(key, x, y) {
@@ -1297,7 +1531,7 @@ function openStylePop() {
 
 /* ---------- circles: add / remove ---------- */
 function addSet() {
-  if (state.sets.length >= 3) return;
+  if (state.sets.length >= MAXSETS) return;
   const used = new Set(state.sets.map(s => s.color));
   const color = PRESETS.find(c => !used.has(c)) || PRESETS[0];
   const names = new Set(state.sets.map(s => s.name.trim()));
@@ -1310,7 +1544,8 @@ function removeSet(id) {
   if (ui.pop) closePop();
   if (ui.input) cancelInput();
   state.sets = state.sets.filter(s => s.id !== id);
-  state.items = state.items.filter(it => { it.sets = it.sets.filter(x => x !== id); return it.sets.length; });
+  // Thoughts left in no group by this removal go with it (as before); ones already ungrouped stay.
+  state.items = state.items.filter(it => { const had = it.sets.includes(id); it.sets = it.sets.filter(x => x !== id); return !had || it.sets.length; });
   for (const k of Object.keys(state.zones)) if (idsOf(k).includes(id)) delete state.zones[k];
   const lab = labelEls.get(id);
   if (lab) lab.classList.add('leaving');
@@ -1449,8 +1684,8 @@ function renderSelBar() {
 }
 
 stage.addEventListener('pointerdown', e => {
-  if (e.button !== 0 || drag || e.target.closest('.chip-pos, .label, .pop, .hint, .addc, .aa, .inputwrap, .selbar')) return;
-  marq = { sx: e.clientX, sy: e.clientY, on: false };
+  if (view !== 'venn' || e.button !== 0 || drag || e.target.closest('.chip-pos, .label, .pop, .hint, .addc, .aa, .inputwrap, .selbar, .vsw')) return;
+  marq ={ sx: e.clientX, sy: e.clientY, on: false };
   window.addEventListener('pointermove', onMarqMove);
   window.addEventListener('pointerup', onMarqUp);
   window.addEventListener('pointercancel', onMarqUp);
@@ -1492,6 +1727,594 @@ function onMarqUp() {
   updateHint(); onHover();
 }
 
+/* ---------- views ---------- */
+function h(tag, cls, text) {
+  const e = document.createElement(tag);
+  if (cls) e.className = cls;
+  if (text != null) e.textContent = text;
+  return e;
+}
+function setVars(el, color) {
+  const t = tone(color);
+  el.style.setProperty('--sc-ink', t.ink); el.style.setProperty('--sc-fill', t.fill); el.style.setProperty('--sc-stroke', t.stroke);
+}
+let toastT;
+function toast(msg) {
+  toastEl.textContent = msg;
+  toastEl.classList.add('show');
+  clearTimeout(toastT);
+  toastT = setTimeout(() => toastEl.classList.remove('show'), 3400);
+}
+let altView = null;   // which view the #alt DOM currently holds
+function setView(v, note) {
+  if (v === view) return;
+  if (v === 'venn' && state.sets.length > 3) { toast(VENN_TIP); return; }
+  if (ui.input) commitInput();
+  if (ui.newItem) commitNew();
+  if (ui.pop) closePop();
+  clearSel();
+  view = v; altView = null; ui.hoverKey = null;
+  stage.classList.remove('in-zone');
+  emptyHint.classList.remove('show');
+  try { localStorage.setItem(VIEW_STORE, v); } catch {}
+  vennEl.classList.toggle('off', v !== 'venn');
+  altEl.classList.toggle('off', v === 'venn');
+  relayout();
+  if (note) toast(note);
+}
+function renderSwitch() {
+  vsw.dataset.v = view;
+  for (const b of vsw.querySelectorAll('button')) b.classList.toggle('on', b.dataset.v === view);
+  const ok = state.sets.length <= 3;
+  vennBtn.classList.toggle('na', !ok);
+  vennBtn.setAttribute('aria-disabled', String(!ok));
+  if (ok) delete vennBtn.dataset.tip; else vennBtn.dataset.tip = VENN_TIP;
+}
+function renderView() {
+  renderSwitch();
+  if (view === 'venn') return;
+  W = innerWidth; H = innerHeight;   // popover placement reads these; computeGeo only runs in the Venn
+  if (altView !== view) {
+    altEl.replaceChildren();
+    tblWrap = upWrap = null; upCols.clear();
+    altView = view;
+  }
+  if (view === 'table') renderTable(); else renderUpset();
+  altFocus(); placePop();
+}
+/* Highlight whatever the open popover is about. */
+function altFocus() {
+  const p = ui.pop;
+  if (view === 'table' && tblWrap) {
+    tblWrap.querySelectorAll('tr[data-row]').forEach(r => r.classList.toggle('on', !!p && p.kind === 'item' && p.id === r.dataset.row));
+    tblWrap.querySelectorAll('[data-set]').forEach(c => c.classList.toggle('col-on', !!p && p.kind === 'set' && p.id === c.dataset.set));
+  }
+  if (view === 'upset' && upWrap) {
+    const fk = p && p.kind === 'combo' ? p.key : null, it = p && p.kind === 'item' ? item(p.id) : null;
+    for (const [k, col] of upCols) {
+      col.classList.toggle('on', k === fk || (!!it && keyOf(it.sets) === k));
+      col.classList.toggle('dim', !!fk && k !== fk);
+    }
+    upWrap.querySelectorAll('.pchip[data-item]').forEach(c => c.classList.toggle('on', !!it && c.dataset.item === it.id));
+  }
+}
+/* Looked up fresh each time: the alt views rebuild their DOM on every change. */
+function altAnchorEl(p) {
+  if (p.kind === 'item') {
+    const el = altEl.querySelector(`[data-item="${p.id}"]`);
+    if (el || view !== 'upset') return el;
+    const it = item(p.id);
+    return it ? upCols.get(keyOf(it.sets)) : null;
+  }
+  if (p.kind === 'set') return altEl.querySelector(`th[data-set="${p.id}"]`);
+  if (p.kind === 'combo') { const c = upCols.get(p.key); return c && c.querySelector('.up-dots'); }
+  return null;
+}
+
+/* ---------- table view ---------- */
+let tblWrap = null, tdown = null, bump = null, rebuilding = false;
+function renderTable() {
+  if (!tblWrap) {
+    tblWrap = h('div', 'tbl-wrap pane');
+    altEl.appendChild(tblWrap);
+    tblWrap.addEventListener('scroll', placePop);
+    // Act on pointerup, from what was pressed: closing a popover on pointerdown can rebuild the table under the pointer.
+    tblWrap.addEventListener('pointerdown', e => {
+      tdown = null;
+      if (e.button !== 0 || e.target.closest('input')) return;
+      const act = tableAction(e.target);
+      if (act) tdown = { act, x: e.clientX, y: e.clientY };
+    });
+    tblWrap.addEventListener('pointerup', e => {
+      const d = tdown;
+      tdown = null;
+      if (d && Math.hypot(e.clientX - d.x, e.clientY - d.y) < 6) d.act();
+    });
+  }
+  rebuilding = true;
+  const old = tblWrap.querySelector('input.ren');
+  const had = !!old && document.activeElement === old, range = had ? [old.selectionStart, old.selectionEnd] : null;
+  const reuse = (key, make) => (old && old.dataset.for === key ? old : make());
+  const t = h('table', 'tbl'), head = t.createTHead().insertRow(), body = t.createTBody();
+  head.appendChild(h('th', 'corner'));
+  for (const s of state.sets) {
+    const c = h('th', 'sh');
+    c.dataset.set = s.id; setVars(c, s.color);
+    if (ui.renaming === s.id) c.appendChild(reuse('s:' + s.id, () => setRenameInput(s)));
+    else {
+      c.appendChild(h('span', 'nm', s.name.trim() || 'Untitled')).title = 'Rename';
+      if (state.sets.length > 1) c.appendChild(xButton('Remove group'));
+    }
+    head.appendChild(c);
+  }
+  const ac = h('th', 'addcol'), plus = h('button', 'tplus');
+  const full = state.sets.length >= MAXSETS;
+  plus.type = 'button'; plus.innerHTML = ICON_PLUS; plus.classList.toggle('na', full);
+  plus.title = full ? `Up to ${MAXSETS} groups` : 'Add a group';
+  ac.appendChild(plus); head.appendChild(ac);
+  for (const it of state.items) {
+    const r = body.insertRow();
+    r.dataset.row = it.id;
+    const rh = h('th', 'rh');
+    rh.dataset.item = it.id;
+    if (ui.renItem === it.id) rh.appendChild(reuse('i:' + it.id, () => itemRenameInput(it)));
+    else {
+      const c = h('div', 'pchip');
+      c.appendChild(h('span', '', it.title)); styleChip(c, it);
+      rh.appendChild(c);
+    }
+    rh.appendChild(xButton('Delete thought'));
+    r.appendChild(rh);
+    for (const s of state.sets) {
+      const td = h('td', 'cell'), on = it.sets.includes(s.id), name = s.name.trim() || 'Untitled';
+      td.dataset.set = s.id; setVars(td, s.color);
+      td.classList.toggle('on', on);
+      if (bump === it.id + '|' + s.id) td.classList.add('bump');
+      td.title = on ? `Remove from ${name}` : `Add to ${name}`;
+      td.innerHTML = `<span class="ck">${ICON_CHECK}</span>`;
+      r.appendChild(td);
+    }
+    r.appendChild(h('td', 'pad'));
+  }
+  bump = null;
+  const ar = body.insertRow(), ah = h('th', 'rh');
+  ar.className = 'addrow';
+  if (ui.newItem) ah.appendChild(reuse('new', newItemInput));
+  else {
+    const b = h('button', 'tadd');
+    b.type = 'button'; b.innerHTML = ICON_PLUS + '<span>Add a thought</span>';
+    ah.appendChild(b);
+  }
+  ar.appendChild(ah);
+  ar.appendChild(h('td', 'pad')).colSpan = state.sets.length + 1;
+  tblWrap.replaceChildren(t);
+  if (had) { old.focus({ preventScroll: true }); old.setSelectionRange(...range); }
+  rebuilding = false;
+}
+function xButton(tip) {
+  const x = h('button', 'lx');
+  x.type = 'button'; x.title = tip; x.setAttribute('aria-label', tip); x.innerHTML = ICON_X;
+  return x;
+}
+function tableAction(t) {
+  const cell = t.closest('th, td');
+  if (!cell) return null;
+  if (t.closest('.tplus')) return () => addSet();
+  if (t.closest('.tadd')) return () => {
+    ui.newItem = true; renderView();
+    const inp = tblWrap.querySelector('input.ren');
+    if (inp) inp.focus({ preventScroll: true });
+  };
+  const sid = cell.dataset.set, iid = cell.dataset.item;
+  if (cell.classList.contains('sh')) {
+    if (t.closest('.lx')) return () => removeSet(sid);
+    if (t.closest('.nm')) return () => openSetPop(sid);
+  }
+  if (cell.classList.contains('rh') && iid) {
+    if (t.closest('.lx')) return () => deleteItem(iid);
+    if (t.closest('.pchip')) return () => openItemPop(iid, null, true);
+  }
+  if (cell.classList.contains('cell')) { const id = cell.parentNode.dataset.row; return () => toggleCell(id, sid); }
+  return null;
+}
+function toggleCell(id, sid) {
+  const it = item(id);
+  if (!it || !setById(sid)) return;
+  it.sets = it.sets.includes(sid) ? it.sets.filter(x => x !== sid) : orderIds([...it.sets, sid]);
+  bump = id + '|' + sid;
+  renderView(); save();
+}
+function deleteItem(id) {
+  if (ui.pop && ui.pop.kind === 'item' && ui.pop.id === id) closePop();
+  state.items = state.items.filter(i => i.id !== id);
+  renderView(); save();
+}
+function setRenameInput(s) {
+  const inp = h('input', 'ren');
+  inp.dataset.for = 's:' + s.id; inp.value = s.name; inp.spellcheck = false; inp.maxLength = 60;
+  hookRename(inp, s); sizeRename(inp);
+  return inp;
+}
+function itemRenameInput(it) {
+  const inp = h('input', 'ren');
+  inp.dataset.for = 'i:' + it.id; inp.value = it.title; inp.spellcheck = false; inp.maxLength = 80;
+  const size = () => { inp.style.width = clamp(textW(inp.value || ' ') + 30, 90, 260) + 'px'; };
+  size();
+  inp.addEventListener('input', () => { it.title = inp.value.trim() || ui.renameOrig; size(); save(); });
+  inp.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); closePop(); } });
+  return inp;
+}
+function newItemInput() {
+  const inp = h('input', 'ren');
+  inp.dataset.for = 'new'; inp.placeholder = 'New thought'; inp.spellcheck = false; inp.maxLength = 80;
+  const size = () => { inp.style.width = clamp(textW(inp.value || inp.placeholder) + 32, 120, 260) + 'px'; };
+  size();
+  inp.addEventListener('input', size);
+  inp.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); commitNew(); } });
+  inp.addEventListener('blur', () => { if (!rebuilding && ui.newItem) commitNew(); });
+  return inp;
+}
+/* New rows start in no group; the user ticks the cells. */
+function commitNew() {
+  const inp = tblWrap && tblWrap.querySelector('input.ren[data-for="new"]');
+  const v = inp ? inp.value.trim() : '';
+  ui.newItem = false;
+  if (v) state.items.push({ id: uid(), title: v, description: '', sets: [], style: {} });
+  renderView();
+  if (v) save();
+}
+
+/* ---------- UpSet view ---------- */
+let upWrap = null, upRoot = null, upStatic = null, upDrag = null;
+const upCols = new Map();
+function renderUpset() {
+  if (!upWrap) {
+    upWrap = h('div', 'up-wrap pane');
+    upRoot = h('div', 'up'); upStatic = h('div');
+    upRoot.appendChild(upStatic); upWrap.appendChild(upRoot); altEl.appendChild(upWrap);
+    upWrap.addEventListener('scroll', placePop);
+    upWrap.addEventListener('pointerdown', onUpDown);
+  }
+  const sets = state.sets, n = sets.length, k = SIZES[state.size].k;
+  const RH = Math.round(30 * k), PILL = Math.round(24 * k), PG = 4;
+  const groups = new Map();
+  let loose = 0;
+  for (const it of state.items) {
+    if (!it.sets.length) { loose++; continue; }
+    const key = keyOf(it.sets);
+    if (!groups.has(key)) groups.set(key, []);
+    groups.get(key).push(it);
+  }
+  // Biggest first; ties go to fewer groups, then to earlier groups.
+  const bits = ids => sets.reduce((m, s, i) => ids.includes(s.id) ? m | 1 << (n - 1 - i) : m, 0);
+  const combos = [...groups].map(([key, its]) => ({ key, its, ids: idsOf(key) }))
+    .sort((a, b) => b.its.length - a.its.length || a.ids.length - b.ids.length || bits(b.ids) - bits(a.ids));
+  const aw = upWrap.clientWidth, ah = upWrap.clientHeight;
+  const labelW = Math.ceil(clamp(Math.max(...sets.map(s => textW(s.name.trim() || 'Untitled', 600, FS))) + 64, 130, 260));
+  const colW = Math.floor(clamp((aw - labelW) / Math.max(combos.length, 1), 64 * k, 112 * k));
+  const barH = Math.round(clamp(ah * .26, 80, 180));
+  const mTop = barH + 12, iTop = mTop + n * RH + 12;
+  const fitN = Math.max(2, Math.floor((ah - iTop + PG) / (PILL + PG)));
+  const most = Math.max(1, ...combos.map(c => c.its.length));
+  const width = labelW + (combos.length ? combos.length * colW : 260);
+  const height = iTop + Math.max(1, Math.min(most, fitN)) * (PILL + PG);
+  upRoot.style.width = width + 'px'; upRoot.style.height = height + 'px';
+  upRoot.style.setProperty('--pill', PILL + 'px');
+
+  upStatic.replaceChildren();
+  const add = (cls, css, text) => { const e = upStatic.appendChild(h('div', cls, text)); Object.assign(e.style, css); return e; };
+  if (combos.length) add('up-cap', { top: (barH - 34) + 'px', width: labelW + 'px' }, 'Thoughts per combination');
+  else add('up-empty', { left: (labelW + 16) + 'px', top: (mTop + 4) + 'px', width: '244px' }, 'No thoughts in a group yet. Add some in the Table view.');
+  sets.forEach((s, i) => {
+    const y = mTop + i * RH;
+    if (i % 2 === 0) add('up-stripe', { top: y + 'px', height: RH + 'px', width: width + 'px' });
+    const row = add('up-set', { top: y + 'px', height: RH + 'px', width: labelW + 'px' });
+    const nm = row.appendChild(h('span', 'nm', s.name.trim() || 'Untitled'));
+    nm.style.color = tone(s.color).ink;
+    row.appendChild(h('span', 'ct', String(state.items.filter(it => it.sets.includes(s.id)).length))).title = 'Thoughts in this group';
+  });
+  if (loose) add('up-cap', { top: iTop + 'px', width: labelW + 'px' }, `${loose} not in any group`);
+
+  const live = new Set();
+  combos.forEach((c, i) => {
+    live.add(c.key);
+    let col = upCols.get(c.key);
+    const tx = `translateX(${labelW + i * colW}px)`;
+    if (!col) {
+      col = h('div', 'up-col enter');
+      col.dataset.key = c.key;
+      col.innerHTML = '<div class="up-n"></div><div class="up-bar"></div><div class="up-dots"></div><div class="up-items"></div>';
+      col.style.transform = tx;
+      upRoot.appendChild(col); upCols.set(c.key, col);
+    }
+    col.style.transform = tx; col.style.width = colW + 'px'; col.style.height = height + 'px';
+    const [num, bar, dots, list] = col.children;
+    const bh = Math.max(3, Math.round(c.its.length / most * (barH - 24)));
+    bar.style.top = (barH - bh) + 'px'; bar.style.height = bh + 'px';
+    num.style.top = (barH - bh - 20) + 'px'; num.textContent = c.its.length;
+    const ins = [];
+    sets.forEach((s, j) => { if (c.ids.includes(s.id)) ins.push(j); });
+    let dh = ins.length > 1 ? `<div class="up-line" style="top:${RH * (ins[0] + .5)}px;height:${RH * (ins[ins.length - 1] - ins[0])}px"></div>` : '';
+    sets.forEach((s, j) => { dh += `<div class="up-dot${ins.includes(j) ? ' in' : ''}" style="top:${RH * (j + .5)}px;--dc:${tone(s.color).ink}"></div>`; });
+    dots.innerHTML = dh;
+    dots.style.top = mTop + 'px'; dots.style.height = n * RH + 'px';
+    list.style.top = iTop + 'px';
+    list.replaceChildren();
+    const cut = c.its.length > fitN ? fitN - 1 : c.its.length;
+    for (const it of c.its.slice(0, cut)) {
+      const p = h('div', 'pchip');
+      p.dataset.item = it.id;
+      p.appendChild(h('span', '', it.title)); styleChip(p, it);
+      list.appendChild(p);
+    }
+    if (cut < c.its.length) list.appendChild(h('div', 'pchip more')).appendChild(h('span', '', `+${c.its.length - cut} more`));
+  });
+  for (const [key, col] of upCols) if (!live.has(key)) {
+    upCols.delete(key);
+    col.classList.add('gone');
+    setTimeout(() => col.remove(), 320);
+  }
+}
+function onUpDown(e) {
+  if (e.button !== 0) return;
+  const p = e.target.closest('.pchip[data-item]');
+  if (p) { upPress(e, p.dataset.item, p); return; }
+  const col = e.target.closest('.up-col');
+  if (!col) return;
+  e.preventDefault();
+  const key = col.dataset.key, sx = e.clientX, sy = e.clientY;
+  const up = ev => {
+    window.removeEventListener('pointerup', up);
+    if (Math.hypot(ev.clientX - sx, ev.clientY - sy) > 6) return;
+    if (ui.pop && ui.pop.kind === 'combo' && ui.pop.key === key) closePop(); else openComboPop(key);
+  };
+  window.addEventListener('pointerup', up);
+}
+function openComboPop(key) {
+  const ids = idsOf(key);
+  const el = popShell(ids, zoneName(ids));
+  const list = h('div', 'list');
+  for (const it of state.items) if (keyOf(it.sets) === key) {
+    const c = h('div', 'pchip');
+    c.dataset.id = it.id;
+    c.appendChild(h('span', '', it.title)); styleChip(c, it);
+    list.appendChild(c);
+  }
+  list.addEventListener('pointerdown', e => {
+    const c = e.target.closest('.pchip');
+    if (c) upPress(e, c.dataset.id, c, true);
+  });
+  el.appendChild(list);
+  showPop({ kind: 'combo', key, anchor: { x: 0, y: 0, w: 0, h: 0 } }, el, null);
+}
+/* Press on a thought: a click opens it, a drag moves it to another combination. */
+function upPress(e, id, el, fromPanel) {
+  if (e.button !== 0) return;
+  e.preventDefault();
+  upDrag = { id, el, fromPanel, sx: e.clientX, sy: e.clientY, on: false, target: null };
+  window.addEventListener('pointermove', upMove);
+  window.addEventListener('pointerup', upUp);
+  window.addEventListener('pointercancel', upUp);
+}
+function upMove(e) {
+  const d = upDrag;
+  if (!d) return;
+  if (!d.on) {
+    const it = item(d.id);
+    if (!it || Math.hypot(e.clientX - d.sx, e.clientY - d.sy) < 4) return;
+    d.on = true;
+    const r = d.el.getBoundingClientRect(), cs = getComputedStyle(d.el);
+    d.fx = d.sx - r.left; d.fy = d.sy - r.top; d.from = keyOf(it.sets);
+    const g = d.el.cloneNode(true);
+    g.classList.add('up-ghost'); g.classList.remove('on');
+    Object.assign(g.style, { width: r.width + 'px', height: r.height + 'px', padding: cs.padding, fontSize: cs.fontSize });
+    floatL.appendChild(g); d.g = g;
+    if (ui.pop) closePop();
+    upWrap.querySelectorAll(`.pchip[data-item="${d.id}"]`).forEach(p => p.classList.add('lift'));
+    stage.classList.add('dragging');
+  }
+  d.g.style.transform = `translate(${f2(e.clientX - d.fx)}px,${f2(e.clientY - d.fy)}px) rotate(-1.5deg) scale(1.04)`;
+  const hit = document.elementFromPoint(e.clientX, e.clientY);
+  const col = hit && hit.closest('.up-col:not(.gone)');
+  const t = col && col.dataset.key !== d.from ? col.dataset.key : null;
+  if (t !== d.target) {
+    d.target = t;
+    for (const [k, c] of upCols) c.classList.toggle('drop', k === t);
+  }
+}
+function upUp() {
+  window.removeEventListener('pointermove', upMove);
+  window.removeEventListener('pointerup', upUp);
+  window.removeEventListener('pointercancel', upUp);
+  const d = upDrag;
+  upDrag = null;
+  if (!d) return;
+  if (!d.on) {
+    if (!d.fromPanel && ui.pop && ui.pop.kind === 'item' && ui.pop.id === d.id) closePop();
+    else openItemPop(d.id, d.el);
+    return;
+  }
+  stage.classList.remove('dragging');
+  for (const c of upCols.values()) c.classList.remove('drop');
+  d.g.remove();
+  const it = item(d.id);
+  if (it && d.target) {
+    it.sets = idsOf(d.target);
+    state.items = state.items.filter(i => i !== it).concat(it);
+    save();
+  }
+  renderView();
+}
+
+/* ---------- import ---------- */
+/* Pasted ranges are tab-separated; files may use commas or semicolons. */
+function parseDelimited(text) {
+  text = text.replace(/^﻿/, '');
+  const first = text.split(/\r?\n/, 1)[0];
+  const d = ['\t', ',', ';'].reduce((a, b) => first.split(b).length > first.split(a).length ? b : a);
+  const rows = [];
+  let row = [], f = '', q = false;
+  for (let i = 0; i < text.length; i++) {
+    const c = text[i];
+    if (q) {
+      if (c !== '"') f += c;
+      else if (text[i + 1] === '"') { f += '"'; i++; }
+      else q = false;
+    } else if (c === '"' && f === '') q = true;
+    else if (c === d) { row.push(f); f = ''; }
+    else if (c === '\n' || c === '\r') {
+      if (c === '\r' && text[i + 1] === '\n') i++;
+      row.push(f); rows.push(row); row = []; f = '';
+    } else f += c;
+  }
+  if (f || row.length) { row.push(f); rows.push(row); }
+  return rows;
+}
+/* Minimal .xlsx reader: unzip, then read the first sheet's cells. */
+async function readXlsx(buf) {
+  const u8 = new Uint8Array(buf), dv = new DataView(buf), dec = new TextDecoder();
+  let e = u8.length - 22;
+  while (e >= 0 && dv.getUint32(e, true) !== 0x06054b50) e--;
+  if (e < 0) throw new Error('not a zip');
+  const files = new Map();
+  let p = dv.getUint32(e + 16, true);
+  for (let i = dv.getUint16(e + 10, true); i > 0 && dv.getUint32(p, true) === 0x02014b50; i--) {
+    const nl = dv.getUint16(p + 28, true);
+    files.set(dec.decode(u8.subarray(p + 46, p + 46 + nl)), { m: dv.getUint16(p + 10, true), size: dv.getUint32(p + 20, true), off: dv.getUint32(p + 42, true) });
+    p += 46 + nl + dv.getUint16(p + 30, true) + dv.getUint16(p + 32, true);
+  }
+  const xml = async name => {
+    const f = files.get(name);
+    if (!f) return null;
+    const s = f.off + 30 + dv.getUint16(f.off + 26, true) + dv.getUint16(f.off + 28, true);
+    const raw = u8.subarray(s, s + f.size);
+    const text = f.m === 0 ? dec.decode(raw)
+      : await new Response(new Blob([raw]).stream().pipeThrough(new DecompressionStream('deflate-raw'))).text();
+    return new DOMParser().parseFromString(text, 'application/xml');
+  };
+  const tags = (node, name) => [...node.getElementsByTagNameNS('*', name)];
+  let sheet = 'xl/worksheets/sheet1.xml';
+  const wb = await xml('xl/workbook.xml'), rels = await xml('xl/_rels/workbook.xml.rels');
+  const first = wb && tags(wb, 'sheet')[0];
+  const rid = first && [...first.attributes].find(a => a.localName === 'id' && a.namespaceURI);
+  const rel = rid && rels && tags(rels, 'Relationship').find(r => r.getAttribute('Id') === rid.value);
+  if (rel) { const t = rel.getAttribute('Target'); sheet = t.startsWith('/') ? t.slice(1) : 'xl/' + t; }
+  const ss = await xml('xl/sharedStrings.xml');
+  const strs = ss ? tags(ss, 'si').map(si => tags(si, 't').filter(t => t.parentNode.localName !== 'rPh').map(t => t.textContent).join('')) : [];
+  const doc = await xml(sheet);
+  if (!doc) throw new Error('no sheet');
+  const colOf = ref => [...ref.match(/^[A-Z]+/i)[0].toUpperCase()].reduce((n, ch) => n * 26 + ch.charCodeAt(0) - 64, 0) - 1;
+  const rows = [];
+  tags(doc, 'row').forEach((row, ri) => {
+    const out = rows[(+row.getAttribute('r') || ri + 1) - 1] = [];
+    let ci = 0;
+    for (const c of tags(row, 'c')) {
+      const ref = c.getAttribute('r'), t = c.getAttribute('t'), v = tags(c, 'v')[0];
+      if (ref) ci = colOf(ref);
+      out[ci++] = t === 's' ? (v ? strs[+v.textContent] ?? '' : '')
+        : t === 'inlineStr' ? tags(c, 't').map(x => x.textContent).join('')
+        : t === 'b' ? (v ? (v.textContent === '1' ? 'TRUE' : 'FALSE') : '')
+        : v ? v.textContent : '';
+    }
+  });
+  return Array.from(rows, r => Array.from(r || [], x => x ?? ''));
+}
+/* First column = thought names, first row = group names, any non-empty cell = member. */
+function gridToData(rows) {
+  const cell = (r, j) => String((r && r[j]) ?? '').trim();
+  rows = rows.filter(r => r && r.some(v => String(v ?? '').trim()));
+  if (rows.length < 2) return { error: 'Need a first row of group names and at least one row of thoughts below it.' };
+  const head = rows[0], width = Math.max(...rows.map(r => r.length)), cols = [];
+  for (let j = 1; j < width; j++) {
+    const name = cell(head, j);
+    if (!name && !rows.some((r, i) => i && cell(r, j))) continue;
+    cols.push({ j, name: (name || `Group ${cols.length + 1}`).slice(0, 60) });
+  }
+  if (!cols.length) return { error: 'No groups found. The first row should hold group names, starting in the second column.' };
+  const dropped = Math.max(0, cols.length - MAXSETS);
+  cols.length = Math.min(cols.length, MAXSETS);
+  const items = [];
+  let skipped = 0;
+  for (const r of rows.slice(1)) {
+    const title = cell(r, 0).slice(0, 80);
+    if (!title) { skipped++; continue; }
+    items.push({ title, in: cols.map((c, k) => cell(r, c.j) ? k : -1).filter(k => k >= 0) });
+  }
+  if (!items.length) return { error: 'No thoughts found. The first column should hold their names.' };
+  return { sets: cols.map(c => c.name), items, dropped, skipped };
+}
+const plural = (n, w) => `${n} ${w}${n === 1 ? '' : 's'}`;
+function openImportPop() {
+  const el = popShell([], '');
+  el.classList.add('imp');
+  el.querySelector('.cap').remove();
+  const body = el.appendChild(h('div'));
+  const showInput = err => {
+    body.replaceChildren();
+    const ta = h('textarea', 'paste');
+    ta.placeholder = 'Paste a range from Excel or Google Sheets here'; ta.spellcheck = false;
+    ta.addEventListener('input', () => { if (ta.value.trim()) tryParse(parseDelimited(ta.value)); });
+    const fi = h('input');
+    fi.type = 'file'; fi.accept = '.xlsx,.csv,.tsv,.txt'; fi.hidden = true;
+    fi.addEventListener('change', async () => {
+      const f = fi.files[0];
+      if (!f) return;
+      try { tryParse(/\.xlsx$/i.test(f.name) ? await readXlsx(await f.arrayBuffer()) : parseDelimited(await f.text())); }
+      catch { showInput('Couldn’t read that file. Try saving it as .xlsx or .csv.'); }
+    });
+    const fb = h('button', 'btn wide', 'Upload an .xlsx or .csv file');
+    fb.type = 'button';
+    fb.addEventListener('click', () => fi.click());
+    body.append(h('div', 'sec-t', 'Import from Excel'), ta, h('div', 'or', 'or'), fb, fi,
+      h('div', 'help', 'First column: thought names. First row: group names. Any filled cell means the thought is in that group.'));
+    if (err) body.appendChild(h('div', 'err', err));
+    placePop();
+    ta.focus({ preventScroll: true });
+  };
+  const tryParse = rows => { const r = gridToData(rows); if (r.error) showInput(r.error); else showPreview(r); };
+  const showPreview = r => {
+    body.replaceChildren();
+    body.append(h('div', 'sec-t', 'Preview'), h('div', 'prev-sum', `${plural(r.sets.length, 'group')} · ${plural(r.items.length, 'thought')}`));
+    const gs = body.appendChild(h('div', 'prev-groups'));
+    r.sets.forEach((name, k) => {
+      const g = gs.appendChild(h('span', 'pg')), ink = tone(PRESETS[k]).ink;
+      g.style.color = ink;
+      g.appendChild(h('span', 'dot8')).style.background = ink;
+      g.append(h('span', 'nm', name), h('small', '', String(r.items.filter(i => i.in.includes(k)).length)));
+    });
+    const list = body.appendChild(h('div', 'prev-items'));
+    for (const it of r.items.slice(0, 6)) {
+      const row = list.appendChild(h('div', 'pi'));
+      row.appendChild(h('span', 't', it.title));
+      const ds = row.appendChild(h('span', 'ds'));
+      for (const k of it.in) { const d = ds.appendChild(h('span', 'dot8')); d.style.background = tone(PRESETS[k]).ink; d.title = r.sets[k]; }
+      if (!it.in.length) ds.appendChild(h('span', 'none', 'no group'));
+    }
+    if (r.items.length > 6) list.appendChild(h('div', 'pi more', `+${r.items.length - 6} more`));
+    const notes = [];
+    if (r.dropped) notes.push(`Only the first ${MAXSETS} groups are kept; ${r.dropped} more were left out.`);
+    if (r.skipped) notes.push(`${plural(r.skipped, 'row')} without a name will be skipped.`);
+    notes.push(`This replaces your current ${plural(state.sets.length, 'group')} and ${plural(state.items.length, 'thought')}. You can undo it.`);
+    for (const n of notes) body.appendChild(h('div', 'note', n));
+    const acts = body.appendChild(h('div', 'acts'));
+    const back = acts.appendChild(h('button', 'btn', 'Back')), go = acts.appendChild(h('button', 'btn pri', 'Replace current data'));
+    back.type = go.type = 'button';
+    back.addEventListener('click', () => showInput());
+    go.addEventListener('click', () => doImport(r));
+    placePop();
+  };
+  showPop({ kind: 'import', anchor: elRect(importBtn) }, el, null);
+  showInput();
+}
+function doImport(r) {
+  closePop(); clearSel();
+  const sets = r.sets.map((name, k) => ({ id: uid(), name, description: '', color: PRESETS[k] }));
+  state.sets = sets;
+  state.items = r.items.map(it => ({ id: uid(), title: it.title, description: '', sets: it.in.map(k => sets[k].id), style: {} }));
+  state.zones = {};
+  relayout(); save();
+}
+
 /* ---------- events ---------- */
 chipsL.addEventListener('pointerdown', e => {
   const el = e.target.closest('.chip-pos');
@@ -1503,7 +2326,7 @@ let swallow = false;
 window.addEventListener('pointerdown', e => {
   swallow = false;
   const t = e.target;
-  const keep = t.closest('.pop') || t.closest('.chip-pos') || t.closest('.aa') || (ui.renaming && t.closest('.label input'));
+  const keep = t.closest('.pop') || t.closest('.chip-pos') || t.closest('.aa') || t.closest('.up-col') || t.closest('input.ren') || (ui.renaming && t.closest('.label input'));
   if (ui.pop && !keep) {
     // Clicking another label opens its own popover; anything else just dismisses.
     if (!t.closest('.label .name')) swallow = true;
@@ -1514,7 +2337,7 @@ window.addEventListener('pointerdown', e => {
 
 stage.addEventListener('click', e => {
   if (swallow) { swallow = false; return; }
-  if (drag || e.target.closest('.chip-pos, .label, .pop, .hint, .addc, .aa, .inputwrap, .selbar')) return;
+  if (view !== 'venn' || drag || e.target.closest('.chip-pos, .label, .pop, .hint, .addc, .aa, .inputwrap, .selbar, .vsw')) return;
   if (sel.size) { clearSel(); return; }
   const Z = hitTest(e.clientX, e.clientY);
   if (!Z) return;
@@ -1538,6 +2361,12 @@ addBtn.addEventListener('click', addSet);
 undoBtn.addEventListener('click', undo);
 redoBtn.addEventListener('click', redo);
 fontBtn.addEventListener('click', () => { if (ui.pop && ui.pop.kind === 'font') closePop(); else openStylePop(); });
+importBtn.addEventListener('click', () => { if (ui.pop && ui.pop.kind === 'import') closePop(); else openImportPop(); });
+vsw.addEventListener('click', e => {
+  const b = e.target.closest('button');
+  if (!b) return;
+  if (b.classList.contains('na')) toast(VENN_TIP); else setView(b.dataset.v);
+});
 
 let lastTarget = null, mouse = { x: -1e4, y: -1e4 }, hoverRaf = 0;
 stage.addEventListener('pointermove', e => {
@@ -1547,8 +2376,8 @@ stage.addEventListener('pointermove', e => {
 document.addEventListener('pointerleave', () => { mouse.x = mouse.y = -1e4; lastTarget = null; onHover(); });
 function onHover() {
   hoverRaf = 0;
-  if (drag || (marq && marq.on)) return;
-  const overUI = lastTarget && lastTarget.closest && lastTarget.closest('.pop, .label, .addc, .aa, .inputwrap, .selbar');
+  if (view !== 'venn' || drag || (marq && marq.on)) return;
+  const overUI = lastTarget && lastTarget.closest && lastTarget.closest('.pop, .label, .addc, .aa, .inputwrap, .selbar, .vsw');
   const sets = overUI ? [] : setsAt(mouse.x, mouse.y);
   const key = sets.length ? keyOf(sets) : null;
   ui.hoverSets = sets;
@@ -1559,8 +2388,10 @@ function onHover() {
 
 window.addEventListener('keydown', e => {
   if (e.key !== 'Escape') return;
-  if (drag) { window.removeEventListener('pointermove', onPressMove); press = null; finishDrag(true); }
+  if (upDrag) { upDrag.target = null; upUp(); }
+  else if (drag) { window.removeEventListener('pointermove', onPressMove); press = null; finishDrag(true); }
   else if (ui.input) cancelInput();
+  else if (ui.newItem) { ui.newItem = false; renderView(); }
   else if (ui.pop) closePop();
   else clearSel();
 });
@@ -1574,6 +2405,8 @@ window.addEventListener('resize', () => {
 });
 
 applyFont(); applySize(); applyColors();
+vennEl.classList.toggle('off', view !== 'venn');
+altEl.classList.toggle('off', view === 'venn');
 relayout({ initial: true });
 loadFaces();
 })();
